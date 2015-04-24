@@ -1,9 +1,10 @@
-necwabtest
-==========
+necwab
+======
 
-necwabtest - NEC Window Accelerator Board test on OpenBSD/luna88k
+necwab - NEC Window Accelerator Board test on OpenBSD/luna88k
 
-This is my experimental program to use NEC WAB board on OpenBSD/luna88k.
+This is my experimental program to use NEC WAB boards (for PC-9801 series)
+on OpenBSD/luna88k.
 
 Target WABs
 -----------
