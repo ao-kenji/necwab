@@ -24,6 +24,7 @@
 #include "nec_gd542xreg.h"
 #include "nec_cirrus.h"
 #include "necwab.h"
+#include "necwabvar.h"
 
 void	nec_cirrus_chip_init(void);
 void	nec_cirrus_enter(void);
@@ -46,38 +47,14 @@ nec_cirrus_main(void)
 
 	printf("Chip ID: 0x%02x\n", nec_cirrus_chip_id());
 
-#ifdef LINEAR	/* not worked :-< */
-
-	/* GRB <- 0x00: single-banking */
-	necwab_outw(GD542X_REG_3CE, 0x000B);
-
-	/* linear mapping at 0x00f00000 */
-	necwab_outb(GD542X_REG_3C4, 0x07);
-	data = necwab_inb(GD542X_REG_3C5);
-	data |= 0xf1;		/* map at 0x00f00000, use 256 colors */
-	necwab_outb(GD542X_REG_3C5, data);
-
 	addr = (u_int8_t *)(pc98membase + 0x00f00000);
-
-	for (i = 0; i < 0xffff; i++) {
-		*(addr + i) = i % 256;
+	for (i = 0; i < 0x0fff; i++) {
+		if (i % 2 == 0)
+			*(addr + i) = ((i / 2) % 256);
+		else
+			/* attribute, omit blinking */
+			*(addr + i) = ((i / 2) % 256);
 	}
-
-	addr = (u_int8_t *)pc98membase;
-
-	for (i = 0; i < 16; i++)
-		for (j = 0; j < 0xfffff; j++) {
-			data = *(addr + 0x00100000 * i + j);
-			if (data == 0x01)
-				printf("found, i = 0x%02x, j = 0x%04x\n", i, j);
-		}
-
-#else	/* LINEAR */
-	addr = (u_int8_t *)(pc98membase + 0x00f00000);
-	for (i = 0; i < 0xffff; i++) {
-		*(addr + i) = i  % 256;
-	}
-#endif
 
 	necwab_dump(addr);
 
@@ -186,110 +163,120 @@ nec_cirrus_leave(void)
 	necwab_outb(NECWAB_DATA, 0x00);
 }
 
+/* values to intialize cirrus GD54xx specific ext registers */
+/* XXX these values are taken from PC XXX */
+static const u_int8_t vga_gd54xx[] = {
+	0x0f,	/* 05: ??? */
+	0x12,	/* 06: enable ext reg (?) */
+	0x00,	/* 07: reset ext sequence (?) */
+	0x00,	/* 08: ??? */
+	0x5c,	/* 09: ??? */
+	0x09,	/* 0A: BIOS Scratch register for 542x (?) */
+	0x4a,	/* 0B: ??? */
+	0x5b,	/* 0C: ??? */
+	0x42,	/* 0D: VCLK2 frequency */
+	0x00,	/* 0E: VCLK3 frequency */
+	0x09,	/* 0F: ??? */
+	0x00,	/* 10: ??? */
+	0x00,	/* 11: ??? */
+	0x00,	/* 12: ??? */
+	0x00,	/* 13: ??? */
+	0x00,	/* 14: BIOS scratch register for 546x (?) */
+	0x00,	/* 15: ??? */
+	0xd8,	/* 16: ??? */
+	0x39,	/* 17: ??? */
+	0x00,	/* 18: ??? */
+	0x01,	/* 19: ??? */
+	0x00,	/* 1A: ??? */
+	0x2b,	/* 1B: ??? */
+	0x2f,	/* 1C: ??? */
+	0x1f,	/* 1D: VCLK2 denominator and post-scalar value */
+	0x00,	/* 1E: VCLK3 denominator and post-scalar value */
+	0x19	/* 1F: MCLK (?) */
+};
+
 void
 nec_cirrus_chip_init(void)
 {
 	int i;
-	static int rst_SR[] = {	0x1206, 0x0200, 0x0300, 0x2101, 0x0012 };
-#if 0	/* cir_pc98.c */
-	static int set_SR[] = {	0x0300, 0x0101, 0x0F02, 0x0003, 0x0E04, 
-				/* cirrus extension? */
-				0x1206, 0x0107, 0x0008, 0x300F, 
-				0x0012, 0xD316, 0x0018, 0x1c1F,
-				0x660B, 0x3B1B, 0x480C, 0x231C, 
-				0x560D, 0x3D1D, 0x5B0E, 0x3F1E };
-	/* CRT controller register */
-	static int set_CR[] = {	0x6500, 0x4F01, 0x5002, 0x8A03, 
-				0x5904, 0x8105, 0xB606, 0x1F07,
-				0x0008, 0x4009, 0x000A, 0x000B,
-				0x000C, 0x000D, 0x800E, 0x200F,
-				0x9610, 0x8E11, 0x8F12, 0x8013,
-				0x0014, 0x8F15, 0x9516, 0xE317,
-				0xFF18, 0x3219, 0x501A, 0x221B};
-#else
-	static int set_SR[] = {	0x0300, 0x0101, 0x0F02, 0x0003, 0x0E04, 
-				0x1206, /* cirrus unlock */
-				0x0107, /* 256 colors */
-				0x0008, /* not use EEPROM */
-				0x300F, /* CRT FIFO depth=16, Data bus=32bit */
-				0x0012, /* do not use Graphic cursor */
-				0xD316,
-				0x0018, /* do not use signature register */
-				0x1c1F,
-				0x660B, /* VCLK0 = 25.180MHz (numetator)*/
-				0x3B1B,	/* VCLK0 = 25.180MHz (denominator) */
-				0x480C, /* VCLK1 = */
-				0x231C, /* VCLK1 = */
-				0x560D, /* VCLK2 = */
-				0x3D1D,	/* VCLK2 = */
-				0x5B0E, /* VCLK3 = */
-				0x3F1E	/* VCLK3 = */
-				 };
-	/* CRT controller register */
-	static int set_CR[] = {	0x5F00, 0x4F01, 0x5002, 0x8203,
-				0x5404, 0x8005, 0xBF06, 0x1F07,
-				0x0008, 0x4109, 0x000A, 0x000B,
-				0x000C, 0x000D, 0x000E, 0x000F,
-				0x9C10, 0x8E11, 0x8F12, 0x2813,
-				0x4014, 0x9615, 0xB916, 0xA317,
-				0xFF18, 
-				/* cirrus exteinsion? */
-				0x3219, /* interlace end register */
-				0x501A,
-				0x221B
-				};
-#endif
-	/* graphic controller register */
-	static int set_GR[] = {	0x0000, 0x0001, 0x0002, 0x0003, 0x0004,
-				0x4005, 0x0506, 0x0F07, 0xFF08 };
-	/* attribute register */
-	static char set_AR[]= {	0x00, 0x01, 0x02, 0x03, 0x04, 0x05,
-				0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B,
-				0x0C, 0x0D, 0x0E, 0x0F, 0x41, 0x00,
-				0x0F, 0x00, 0x00 };
-	static int set_GR2[] = {0x0009, 0x000a, 0x000b };
 
-	for(i = 0; i < sizeof(rst_SR) / sizeof(rst_SR[0]); i++)
-		necwab_outw(GD542X_REG_3C4, rst_SR[i]);
-	for(i = 0; i < sizeof(set_SR) / sizeof(set_SR[0]); i++)
-		necwab_outw(GD542X_REG_3C4, set_SR[i]);
-	necwab_outw(GD542X_REG_3C4, 0x340f);
+	/* use as standard VGA */
+
+	/* pixel mask register <- 0xff: color mode through */
+	necwab_outb(GD542X_REG_3C6, 0xff);
 
 	/* 400 line, upper page, reserved, 25.175Mhz, RAM enable, color */
 	necwab_outb(GD542X_REG_3C2, 0x63);
 
-	/* GR6 <- 0x05: a0000 - 64KB, normal, graphic mode */
-	necwab_outw(GD542X_REG_3CE, 0x0506);
+	for(i = 0; i < sizeof(mode03_SR) / sizeof(mode03_SR[0]); i++) {
+		necwab_outb(GD542X_REG_3C4, (u_int8_t)i);
+		necwab_outb(GD542X_REG_3C5, mode03_SR[i]);
+	}
 
-	/* SR0 <- 0x03: turn on sequencer */
-	necwab_outw(GD542X_REG_3C4, 0x0300);
+#if 0
+	nec_cirrus_unlock();
+	for(i = 0; i < sizeof(vga_gd54xx) / sizeof(vga_gd54xx[0]); i++) {
+		necwab_outb(GD542X_REG_3C4, (u_int8_t)(i + 5));
+		necwab_outb(GD542X_REG_3C5, vga_gd54xx[i]);
+	}
+	nec_cirrus_lock();
+#endif
 
-	/* CR11 <- 0x20: unlock CR0-7 */
+	/* CR11 <- 0x20; unlock CR0-7 */
 	necwab_outw(GD542X_REG_3D4, 0x2011);
-	for(i = 0; i < sizeof(set_CR) / sizeof(set_CR[0]); i++)
-		necwab_outw(GD542X_REG_3D4, set_CR[i]);
+
+	for(i = 0; i < sizeof(mode03_CR) / sizeof(mode03_CR[0]); i++) {
+		necwab_outb(GD542X_REG_3D4, (u_int8_t)i);
+		necwab_outb(GD542X_REG_3D5, mode03_CR[i]);
+	}
+
+	for(i = 0; i < sizeof(mode03_GR) / sizeof(mode03_GR[0]); i++) {
+		necwab_outb(GD542X_REG_3CE, (u_int8_t)i);
+		necwab_outb(GD542X_REG_3CF, mode03_GR[i]);
+	}
+	/* a0000 - 64KB, normal, text mode */
+	necwab_outb(GD542X_REG_3CE, 0x06);
+	necwab_outb(GD542X_REG_3CF, 0x06);
+
+	/* clear internal flip-flop status for AR */
+	necwab_inb(GD542X_REG_3DA);
+	for(i = 0; i < sizeof(mode03_AR) / sizeof(mode03_AR[0]); i++) {
+		necwab_outb(GD542X_REG_3C0, (u_int8_t)i);
+		necwab_outb(GD542X_REG_3C0, mode03_AR[i]);
+	}
+	necwab_inb(GD542X_REG_3DA);
+	/* ARX <- 0x20: Video Enable */
+	necwab_outb(GD542X_REG_3C0, 0x20);
+
+	/* palette */
+	necwab_outb(GD542X_REG_3C8, 0);	/* reset */
+	for(i = 0; i < sizeof(default_pal) / sizeof(default_pal[0]); i++) {
+		/* data (R,G,B) */
+		necwab_outb(GD542X_REG_3C9, default_pal[i].r);
+		necwab_outb(GD542X_REG_3C9, default_pal[i].g);
+		necwab_outb(GD542X_REG_3C9, default_pal[i].b);
+	}
+
+	necwab_outb(GD542X_REG_3C7, 0);	/* reset */
+	for(i = 0; i < sizeof(default_pal) / sizeof(default_pal[0]); i++) {
+		int r, g, b;
+		/* data (R,G,B) */
+		r = necwab_inb(GD542X_REG_3C9);
+		g = necwab_inb(GD542X_REG_3C9);
+		b = necwab_inb(GD542X_REG_3C9);
+		printf("pal %03d, (%02x, %02x, %02x)\n",
+			i, r, g, b);
+	}
+#if 0
+	necwab_outw(GD542X_REG_3C4, 0x340f);
 
 	/* CR1D <- 0x00: */
 	necwab_outw(GD542X_REG_3D4, 0x001d);
 
-	/* SR17 <- 0x01: Shadow DAC Write off ?*/
-	necwab_outw(GD542X_REG_3C4, 0x0117);
-
-	for(i = 0; i < sizeof(set_GR) / sizeof(set_GR[0]); i++)
-		necwab_outw(GD542X_REG_3CE, set_GR[i]);
-
 	necwab_inb(GD542X_REG_3DA);
 
-	for(i = 0 ; i < sizeof(set_AR) / sizeof(set_AR[0]); i++) {
-		necwab_outb(GD542X_REG_3C0, i);
-		necwab_outb(GD542X_REG_3C0, set_AR[i]);
-	}
-
-	/* ARX <- 0x20: Video Enable */
-	necwab_outb(GD542X_REG_3C0, 0x20);
-
-	/* HDR <- 0xff: color mode reserved? TRM 9-80 */
-	necwab_outb(GD542X_REG_3C6, 0xff);
+	/* GR6 <- 0x05: a0000 - 64KB, normal, graphic mode */
+	necwab_outw(GD542X_REG_3CE, 0x0506);
 
 	for(i = 0; i < sizeof(set_GR2) / sizeof(set_GR2[0]); i++)
 		necwab_outw(GD542X_REG_3CE, set_GR2[i]);
@@ -299,4 +286,5 @@ nec_cirrus_chip_init(void)
 	necwab_inb(GD542X_REG_3C6);
 	necwab_inb(GD542X_REG_3C6);
 	necwab_inb(GD542X_REG_3C6);
+#endif
 }
