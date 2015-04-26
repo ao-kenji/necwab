@@ -27,6 +27,7 @@
 #include "necwabvar.h"
 
 void	nec_cirrus_chip_init(void);
+void	nec_cirrus_chip_init2(void);
 void	nec_cirrus_enter(void);
 void	nec_cirrus_leave(void);
 
@@ -43,19 +44,28 @@ nec_cirrus_main(void)
 
 	/* enable WAB chip register */
 	nec_cirrus_enter();
-	nec_cirrus_chip_init();
+	nec_cirrus_chip_init2();
 
 	printf("Chip ID: 0x%02x\n", nec_cirrus_chip_id());
 
-	addr = (u_int8_t *)(pc98membase + 0x00f00000);
-	for (i = 0; i < 0x0fff; i++) {
-		if (i % 2 == 0)
-			*(addr + i) = ((i / 2) % 256);
-		else
-			/* attribute, omit blinking */
-			*(addr + i) = ((i / 2) % 256);
+	for (i = 0; i < 640*480; i++) {
+#if 0
+		nec_cirrus_write(i, i % 256);
+#else
+		nec_cirrus_write(i, 0);
+#endif
 	}
 
+#if 0
+	i = 240 * 640 + 320;
+	nec_cirrus_write(i, i % 256);
+
+	necwab_outb(GD542X_REG_3CE, 0x09);
+	necwab_outb(GD542X_REG_3CF, (i & 0xf0000)>>12);
+#endif
+
+	i = 0;
+	addr = (u_int8_t *)(pc98membase + 0x00f00000 + (i & 0xffff));
 	necwab_dump(addr);
 
 	getchar();
@@ -118,6 +128,26 @@ nec_cirrus_disp_off(void)
 	necwab_outb(NECWAB_DATA, data);
 }
 
+void
+nec_cirrus_write(u_int32_t addr, u_int8_t value)
+{
+	u_int32_t offset;
+	u_int8_t  base;
+	u_int8_t *waddr;
+
+	base   = (u_int8_t)((addr & 0x000f0000) >> 12);
+	offset = (u_int32_t)(addr & 0x0000ffff);
+#if 0
+	printf("0x%02x, 0x%04x, 0x%02x\n", base, offset, value);
+#endif
+
+	necwab_outb(GD542X_REG_3CE, 0x09);
+	necwab_outb(GD542X_REG_3CF, base);
+
+	waddr = (u_int8_t *)(pc98membase + 0x00f00000 + offset);
+	*waddr = value;
+}
+
 /* unlock/lock Cirrus extension */
 void
 nec_cirrus_unlock(void)
@@ -168,28 +198,28 @@ nec_cirrus_leave(void)
 static const u_int8_t vga_gd54xx[] = {
 	0x0f,	/* 05: ??? */
 	0x12,	/* 06: enable ext reg (?) */
-	0x00,	/* 07: reset ext sequence (?) */
-	0x00,	/* 08: ??? */
-	0x5c,	/* 09: ??? */
+	0x01,	/* 07: High-Resolution 256-Color */
+	0x00,	/* 08: EEPROM control register */
+	0x5c,	/* 09: BIOS Scratch register for 542x (?) */
 	0x09,	/* 0A: BIOS Scratch register for 542x (?) */
-	0x4a,	/* 0B: ??? */
-	0x5b,	/* 0C: ??? */
-	0x42,	/* 0D: VCLK2 frequency */
-	0x00,	/* 0E: VCLK3 frequency */
-	0x09,	/* 0F: ??? */
-	0x00,	/* 10: ??? */
-	0x00,	/* 11: ??? */
-	0x00,	/* 12: ??? */
-	0x00,	/* 13: ??? */
+	0x4a,	/* 0B: VCLK0 frequency numerator */
+	0x5b,	/* 0C: VCLK1 frequency numerator */
+	0x42,	/* 0D: VCLK2 frequency numerator */
+	0x00,	/* 0E: VCLK3 frequency numerator */
+	0x10,	/* 0F: DRAM control register */
+	0x00,	/* 10: Graphic cursor X position */
+	0x00,	/* 11: Graphic cursor Y position */
+	0x00,	/* 12: Graphic cursor attribute */
+	0x00,	/* 13: Graphic cursor pattern address */
 	0x00,	/* 14: BIOS scratch register for 546x (?) */
-	0x00,	/* 15: ??? */
-	0xd8,	/* 16: ??? */
+	0x00,	/* 15: BIOS scratch register for 546x (?) */
+	0xf8,	/* 16: Performance Tuning */
 	0x39,	/* 17: ??? */
 	0x00,	/* 18: ??? */
 	0x01,	/* 19: ??? */
 	0x00,	/* 1A: ??? */
-	0x2b,	/* 1B: ??? */
-	0x2f,	/* 1C: ??? */
+	0x2b,	/* 1B: VCLK0 denominator and post-scalar value */
+	0x2f,	/* 1C: VCLK1 denominator and post-scalar value */
 	0x1f,	/* 1D: VCLK2 denominator and post-scalar value */
 	0x00,	/* 1E: VCLK3 denominator and post-scalar value */
 	0x19	/* 1F: MCLK (?) */
@@ -200,53 +230,100 @@ nec_cirrus_chip_init(void)
 {
 	int i;
 
-	/* use as standard VGA */
-
-	/* pixel mask register <- 0xff: color mode through */
-	necwab_outb(GD542X_REG_3C6, 0xff);
-
-	/* 400 line, upper page, reserved, 25.175Mhz, RAM enable, color */
-	necwab_outb(GD542X_REG_3C2, 0x63);
-
-	for(i = 0; i < sizeof(mode03_SR) / sizeof(mode03_SR[0]); i++) {
-		necwab_outb(GD542X_REG_3C4, (u_int8_t)i);
-		necwab_outb(GD542X_REG_3C5, mode03_SR[i]);
-	}
-
-#if 0
 	nec_cirrus_unlock();
+
+	/* XX:400 line, upper page, reserved, 25.175Mhz, RAM enable, color */
+	necwab_outb(GD542X_REG_3C2, 0xef);
+	/* enable VGA subsystem */
+	necwab_outb(GD542X_REG_3C3, 0x01);
+
+	/* SR: Sequence Control Register */
+	necwab_outb(GD542X_REG_3C4, 0x00);
+	necwab_outb(GD542X_REG_3C5, 0x01);
+
+	for(i = 1; i < sizeof(modeXX_SR) / sizeof(modeXX_SR[0]); i++) {
+		necwab_outb(GD542X_REG_3C4, (u_int8_t)i);
+		necwab_outb(GD542X_REG_3C5, modeXX_SR[i]);
+	}
+	/* cirrus extended */
 	for(i = 0; i < sizeof(vga_gd54xx) / sizeof(vga_gd54xx[0]); i++) {
 		necwab_outb(GD542X_REG_3C4, (u_int8_t)(i + 5));
 		necwab_outb(GD542X_REG_3C5, vga_gd54xx[i]);
 	}
-	nec_cirrus_lock();
+
+#ifdef USE_16BIT
+	/* color mode */
+	necwab_outb(GD542X_REG_3C4, 0x0f);
+	necwab_outb(GD542X_REG_3C5, 0x95);
+
+	necwab_outb(GD542X_REG_3C4, 0x07);
+	necwab_outb(GD542X_REG_3C5, 0x07);
 #endif
+	/*
+	 * 640x480 (60Hz): 0x65, 0x3b
+	 * 1024x768 : 0x4d, 0x22 
+	 */
+	necwab_outb(GD542X_REG_3C4, 0x0e);
+	necwab_outb(GD542X_REG_3C5, 0x65);
+	necwab_outb(GD542X_REG_3C4, 0x1e);
+	necwab_outb(GD542X_REG_3C5, 0x3b);
 
-	/* CR11 <- 0x20; unlock CR0-7 */
-	necwab_outw(GD542X_REG_3D4, 0x2011);
+	/* CR: */
+	/* unlock CR0-7 */
+	necwab_outb(GD542X_REG_3D4, 0x11);
+	necwab_outb(GD542X_REG_3D5, 0x00);	/* 0x20? */
 
-	for(i = 0; i < sizeof(mode03_CR) / sizeof(mode03_CR[0]); i++) {
+	for(i = 0; i < sizeof(modeXX_CR) / sizeof(modeXX_CR[0]); i++) {
 		necwab_outb(GD542X_REG_3D4, (u_int8_t)i);
-		necwab_outb(GD542X_REG_3D5, mode03_CR[i]);
+		necwab_outb(GD542X_REG_3D5, modeXX_CR[i]);
 	}
 
-	for(i = 0; i < sizeof(mode03_GR) / sizeof(mode03_GR[0]); i++) {
+	/* GR */
+	for(i = 0; i < sizeof(modeXX_GR) / sizeof(modeXX_GR[0]); i++) {
 		necwab_outb(GD542X_REG_3CE, (u_int8_t)i);
-		necwab_outb(GD542X_REG_3CF, mode03_GR[i]);
+		necwab_outb(GD542X_REG_3CF, modeXX_GR[i]);
 	}
-	/* a0000 - 64KB, normal, text mode */
-	necwab_outb(GD542X_REG_3CE, 0x06);
-	necwab_outb(GD542X_REG_3CF, 0x06);
 
+	/*
+	 * GRB <- 0x0e: disable offset reg#1, enable BY8 addressing,
+	 *              enable extended write modes,
+	 *		and enable 8-byte data latches
+	 * see TRM D6
+	 */
+	necwab_outb(GD542X_REG_3CE, 0x0b);
+	necwab_outb(GD542X_REG_3CF, 0x0e);
+
+	/* a0000 - affff 64KB, normal, graphic mode */
+	necwab_outb(GD542X_REG_3CE, 0x06);
+	necwab_outb(GD542X_REG_3CF, 0x05);
+
+	/* AR */
 	/* clear internal flip-flop status for AR */
 	necwab_inb(GD542X_REG_3DA);
-	for(i = 0; i < sizeof(mode03_AR) / sizeof(mode03_AR[0]); i++) {
+	for(i = 0; i < sizeof(modeXX_AR) / sizeof(modeXX_AR[0]); i++) {
 		necwab_outb(GD542X_REG_3C0, (u_int8_t)i);
-		necwab_outb(GD542X_REG_3C0, mode03_AR[i]);
+		necwab_outb(GD542X_REG_3C0, modeXX_AR[i]);
 	}
 	necwab_inb(GD542X_REG_3DA);
 	/* ARX <- 0x20: Video Enable */
 	necwab_outb(GD542X_REG_3C0, 0x20);
+
+	/* pixel mask register <- 0xff: color mode through */
+	necwab_outb(GD542X_REG_3C6, 0xff);
+
+	/* HDR: Hidden DAC register ? */
+	necwab_inb(GD542X_REG_3DA);
+	necwab_inb(GD542X_REG_3C6);
+	necwab_inb(GD542X_REG_3C6);
+	necwab_inb(GD542X_REG_3C6);
+	necwab_inb(GD542X_REG_3C6);
+#ifdef USE_16BIT
+	/* 0xe1 = 16bit, 5-6-5 */
+	necwab_outb(GD542X_REG_3C6, 0x01);
+#else
+	/* 0x70 = VGA compat., 0xf0 = 6bit, */
+	necwab_outb(GD542X_REG_3C6, 0x70);
+#endif
 
 	/* palette */
 	necwab_outb(GD542X_REG_3C8, 0);	/* reset */
@@ -267,24 +344,104 @@ nec_cirrus_chip_init(void)
 		printf("pal %03d, (%02x, %02x, %02x)\n",
 			i, r, g, b);
 	}
-#if 0
-	necwab_outw(GD542X_REG_3C4, 0x340f);
+}
 
-	/* CR1D <- 0x00: */
-	necwab_outw(GD542X_REG_3D4, 0x001d);
+void
+nec_cirrus_chip_init2(void)
+{
+	int i;
+	u_int8_t *c;
 
-	necwab_inb(GD542X_REG_3DA);
+	nec_cirrus_unlock();
 
-	/* GR6 <- 0x05: a0000 - 64KB, normal, graphic mode */
-	necwab_outw(GD542X_REG_3CE, 0x0506);
+	/* MISC */
+	necwab_outb(GD542X_REG_3C2, 0xef);
+	/* enable VGA subsystem */
+	necwab_outb(GD542X_REG_3C3, 0x01);
 
-	for(i = 0; i < sizeof(set_GR2) / sizeof(set_GR2[0]); i++)
-		necwab_outw(GD542X_REG_3CE, set_GR2[i]);
+	/* SR: Sequence Control Register */
+	for (c = &nec_cirrus_SRdata; *c != 0xff; /* empty */) {
+		necwab_outb(GD542X_REG_3C4, *c++);
+		necwab_outb(GD542X_REG_3C5, *c++);
+	}
 
-	necwab_inb(GD542X_REG_3C6);
-	necwab_inb(GD542X_REG_3C6);
-	necwab_inb(GD542X_REG_3C6);
-	necwab_inb(GD542X_REG_3C6);
-	necwab_inb(GD542X_REG_3C6);
+#ifdef USE_16BIT
+	/* color mode */
+	necwab_outb(GD542X_REG_3C4, 0x0f);
+	necwab_outb(GD542X_REG_3C5, 0x95);
+	necwab_outb(GD542X_REG_3C4, 0x07);
+	necwab_outb(GD542X_REG_3C5, 0x07);
 #endif
+	/*
+	 * 640x480 (60Hz): 0x65, 0x3b
+	 * 1024x768 : 0x4d, 0x22 
+	 */
+	necwab_outb(GD542X_REG_3C4, 0x0e);
+	necwab_outb(GD542X_REG_3C5, 0x65);
+	necwab_outb(GD542X_REG_3C4, 0x1e);
+	necwab_outb(GD542X_REG_3C5, 0x3b);
+
+	/* CR: */
+	/* unlock CR0-7 */
+	necwab_outb(GD542X_REG_3D4, 0x11);
+	necwab_outb(GD542X_REG_3D5, 0x00);	/* 0x20? */
+
+	for (c = &nec_cirrus_CRdata_640; *c != 0xff; /* empty */) {
+		necwab_outb(GD542X_REG_3D4, *c++);
+		necwab_outb(GD542X_REG_3D5, *c++);
+	}
+
+	/* GR */
+	for (c = &nec_cirrus_GRdata; *c != 0xff; /* empty */) {
+		necwab_outb(GD542X_REG_3CE, *c++);
+		necwab_outb(GD542X_REG_3CF, *c++);
+	}
+
+	/* AR */
+	/* clear internal flip-flop status for AR */
+	necwab_inb(GD542X_REG_3DA);
+	for (c = &nec_cirrus_ARdata; *c != 0xff; /* empty */) {
+		necwab_outb(GD542X_REG_3C0, *c++);
+		necwab_outb(GD542X_REG_3C0, *c++);
+	}
+	necwab_inb(GD542X_REG_3DA);
+	/* ARX <- 0x20: Video Enable */
+	necwab_outb(GD542X_REG_3C0, 0x20);
+
+	/* pixel mask register <- 0xff: color mode through */
+	necwab_outb(GD542X_REG_3C6, 0xff);
+
+	/* HDR: Hidden DAC register ? */
+	necwab_inb(GD542X_REG_3DA);
+	necwab_inb(GD542X_REG_3C6);
+	necwab_inb(GD542X_REG_3C6);
+	necwab_inb(GD542X_REG_3C6);
+	necwab_inb(GD542X_REG_3C6);
+#ifdef USE_16BIT
+	/* 0xe1 = 16bit, 5-6-5 */
+	necwab_outb(GD542X_REG_3C6, 0x01);
+#else
+	/* 0x70 = VGA compat., 0xf0 = 6bit, */
+	necwab_outb(GD542X_REG_3C6, 0xf0);
+#endif
+
+	/* palette */
+	necwab_outb(GD542X_REG_3C8, 0);	/* reset */
+	for(i = 0; i < sizeof(default_pal) / sizeof(default_pal[0]); i++) {
+		/* data (R,G,B) */
+		necwab_outb(GD542X_REG_3C9, default_pal[i].r);
+		necwab_outb(GD542X_REG_3C9, default_pal[i].g);
+		necwab_outb(GD542X_REG_3C9, default_pal[i].b);
+	}
+
+	necwab_outb(GD542X_REG_3C7, 0);	/* reset */
+	for(i = 0; i < sizeof(default_pal) / sizeof(default_pal[0]); i++) {
+		int r, g, b;
+		/* data (R,G,B) */
+		r = necwab_inb(GD542X_REG_3C9);
+		g = necwab_inb(GD542X_REG_3C9);
+		b = necwab_inb(GD542X_REG_3C9);
+		printf("pal %03d, (%02x, %02x, %02x)\n",
+			i, r, g, b);
+	}
 }
