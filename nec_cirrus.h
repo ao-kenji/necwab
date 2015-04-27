@@ -26,3 +26,4 @@ void	nec_cirrus_disp_off(void);
 void	nec_cirrus_unlock(void);
 void	nec_cirrus_lock(void);
 void	nec_cirrus_write(u_int32_t, u_int8_t);
+u_int8_t	nec_cirrus_read(u_int32_t);
