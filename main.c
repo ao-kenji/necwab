@@ -35,7 +35,8 @@ int	debug;
 int
 main(int argc, char **argv)
 {
-	int type;
+	int type, mode;
+	const char *errstr;
 
 	/*
 	 * parse options
@@ -51,13 +52,18 @@ main(int argc, char **argv)
 			break;
 		default:
 			usage();
-			break;
+			return 1;
+			/* NOTREACHED */
 		}
 	}
 	argc -= optind;
 	argv += optind;
 
-	if (argc != 0) {
+	if (argc == 0)
+		mode = 2;
+	else if (argc == 1)
+		mode = (int)strtonum(argv[0], 0, 99, &errstr);
+	else {
 		usage();
 		return 1;
 	}
@@ -69,7 +75,7 @@ main(int argc, char **argv)
 		nec_s3_main();
 		break;
 	case 0x60:
-		nec_cirrus_main();
+		nec_cirrus_main(mode);
 		break;
 	default:
 		break;
@@ -82,5 +88,8 @@ main(int argc, char **argv)
 void
 usage(void)
 {
-	printf("Usage:\n");
+	extern char *__progname;
+
+	printf("Usage: %s [mode]\n", __progname);
+	printf("\tmode:\t0: 640x480, 1: 800x600, 2: 1024x768(default)\n");
 }
