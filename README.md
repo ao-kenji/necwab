@@ -15,6 +15,6 @@ Current status
 --------------
 - PC-9801-96: 1024x768(8bpp), 800x600(8bpp), and 640x480(8bpp) seem to work.
 
-!(https://pbs.twimg.com/media/CDubVUwVIAAb02C.jpg)
+![1024x768 on LUNA-88K2](https://pbs.twimg.com/media/CDubVUwVIAAb02C.jpg)
 
 - PC-9801-85: Not working yet.
