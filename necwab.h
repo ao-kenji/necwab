@@ -37,4 +37,3 @@ int necwab_outb(u_int16_t, u_int8_t);
 int necwab_outw(u_int16_t, u_int16_t);
 u_int8_t necwab_inb(u_int16_t);
 int necwab_ident_board(void);
-void necwab_dump(u_int8_t *);

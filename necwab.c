@@ -145,21 +145,3 @@ necwab_ident_board(void)
 	return (int)data;
 }
 
-/* 256 bytes memory dump  */
-void
-necwab_dump(u_int8_t *addr)
-{
-	int i;
-
-	for (i = 0; i < 256; i++) {
-		if (i % 16 == 0)
-			printf("0x%08x ", addr + i);
-#if 0
-		printf("%02x ", *(addr + i));
-#else
-		printf("%02x ", nec_cirrus_read(addr + i));
-#endif
-		if (i % 16 == 15)
-			printf("\n");
-	}
-}
