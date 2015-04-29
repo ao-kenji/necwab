@@ -25,7 +25,6 @@
 #include <sys/mman.h>		/* mmap(2) */
 #include <sys/types.h>
 
-#include "nec_gd542xreg.h"
 #include "nec_cirrus.h"
 #include "nec_s3.h"
 #include "necwab.h"

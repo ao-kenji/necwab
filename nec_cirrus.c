@@ -25,7 +25,6 @@
 #include <stdio.h>
 #include <sys/types.h>
 
-#include "nec_gd542xreg.h"
 #include "nec_cirrus.h"
 #include "necwab.h"
 #include "color.h"
@@ -149,7 +148,7 @@ nec_cirrus_disp_off(void)
  */
 void
 nec_cirrus_set_base(u_int8_t base) {
-	static u_int8_t base0;	/* cache */
+	static u_int8_t base0 = 0xff;	/* cache */
 
 	if (base0 != base) {
 		necwab_outb(GD542X_REG_3CE, 0x09);
@@ -225,7 +224,8 @@ void
 nec_cirrus_unlock(void)
 {
 	/* 0x12 -> SR6 */ 
-	necwab_outw(GD542X_REG_3C4, 0x0612);
+	necwab_outb(GD542X_REG_3C4, 0x06);
+	necwab_outb(GD542X_REG_3C5, 0x12);
 }
 
 /*
@@ -235,7 +235,8 @@ void
 nec_cirrus_lock(void)
 {
 	/* 0x00 -> SR6 */ 
-	necwab_outw(GD542X_REG_3C4, 0x0600);
+	necwab_outb(GD542X_REG_3C4, 0x06);
+	necwab_outb(GD542X_REG_3C5, 0x00);
 }
 
 void
