@@ -13,6 +13,8 @@ Target WABs
 
 Current status
 --------------
-PC-9801-96: 1024x768(8bpp), 800x600(8bpp), and 640x480(8bpp) seem to work fine.
+- PC-9801-96: 1024x768(8bpp), 800x600(8bpp), and 640x480(8bpp) seem to work.
 
-PC-9801-85: Not working yet.
+!(https://pbs.twimg.com/media/CDubVUwVIAAb02C.jpg)
+
+- PC-9801-85: Not working yet.
