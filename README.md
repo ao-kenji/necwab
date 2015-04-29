@@ -15,7 +15,7 @@ Current status
 --------------
 ### PC-9801-96
 
-1024x768(8bpp), 800x600(8bpp), and 640x480(8bpp) mode are working with this program.  This board does not support Linear Addressing, so we have to use segment and offset access on 1MB VRAM:-<  16bpp mode are not checked yet.
+1024x768(8bpp), 800x600(8bpp), and 640x480(8bpp) modes are working with this program.  This board seems not support Linear Addressing, so we have to use "paging" addressing (base and offset) scheme on 1MB VRAM:-(  16bpp mode is not checked yet.
 
 ![1024x768 on LUNA-88K2](https://pbs.twimg.com/media/CDubVUwVIAAb02C.jpg)
 
@@ -33,4 +33,4 @@ References
 
 Special Thanks
 --------------
-- @oshimya: donated his PC-9801-96 WAB
+- @oshimyja: donated his PC-9801-96 WAB
