@@ -31,9 +31,7 @@ int necwab_init(void);
 void necwab_fini(void);
 
 /* internal use */
-int necwab_write_reg(uint16_t, uint8_t);
-int necwab_read_reg(uint16_t, uint8_t *);
+u_int8_t necwab_inb(u_int16_t);
 int necwab_outb(u_int16_t, u_int8_t);
 int necwab_outw(u_int16_t, u_int16_t);
-u_int8_t necwab_inb(u_int16_t);
 int necwab_ident_board(void);

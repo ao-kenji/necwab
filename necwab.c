@@ -90,10 +90,10 @@ necwab_fini(void)
 	close(wab_iofd);
 }
 
-int
-necwab_write_reg(u_int16_t index, u_int8_t data)
+u_int8_t
+necwab_inb(u_int16_t index)
 {
-	*(pc98iobase + index) = data;
+	return *(pc98iobase + index);
 }
 
 inline int
@@ -112,12 +112,6 @@ necwab_outw(u_int16_t index, u_int16_t data)
 	necwab_outb(index + 0, (u_int8_t)(data & 0xff));
 	necwab_outb(index + 1, (u_int8_t)(data >> 8));
 #endif
-}
-
-u_int8_t
-necwab_inb(u_int16_t index)
-{
-	return *(pc98iobase + index);
 }
 
 int
