@@ -62,8 +62,18 @@ main(int argc, char **argv)
 	if (argc == 0)
 		mode = 2;
 	else if (argc == 1)
-		mode = (int)strtonum(argv[0], 0, 99, &errstr);
-	else {
+		mode = (int)strtonum(argv[0], 0, 63, &errstr);
+
+	switch (mode) {
+	case 0x0:	/* 640x480, 8bpp */
+	case 0x1:	/* 800x600, 8bpp */
+	case 0x2:	/* 1024x768, 8bpp (default) */
+	/* case 0x3:	   1280x1024, 8bpp */
+	case 0x10:	/* 640x480, 16bpp(5-6-5) */
+	case 0x11:	/* 800x600, 16bpp(5-6-5) */
+	/* case 0x12:	   1024x768, 16bpp(5-6-5) */
+		break;
+	default:
 		usage();
 		return 1;
 	}
@@ -91,5 +101,6 @@ usage(void)
 	extern char *__progname;
 
 	printf("Usage: %s [mode]\n", __progname);
-	printf("\tmode:\t0: 640x480, 1: 800x600, 2: 1024x768(default)\n");
+	printf("\tmode:\t 0: 640x480x8bpp,   1: 800x600x8bpp,  2: 1024x768x8bpp(default)\n");
+	printf("\t\t16: 640x480x16bpp, 17: 800x600x16bpp\n");
 }

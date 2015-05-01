@@ -31,7 +31,7 @@
 
 static u_int8_t nec_cirrus_SRdata[] = {
 	0x00,0x02,0x00,0x03,0x01,0x01,0x02,0xFF,
-	0x03,0x00,0x04,0x0E,0x05,0x0F,0x06,0x12,	/* SR4 0x0e -> 0x06? */
+	0x03,0x00,0x04,0x0E,0x05,0x0F,0x06,0x12,
 	0x07,0x01,0x08,0x00,0x09,0x6C,0x0A,0x59,	/* SR7 0x07 -> 0x01 if 8 bit? */
 	0x0B,0x4A,0x0C,0x5B,0x0D,0x42,0x0E,0x54,
 	0x0F,0xBD,0x10,0x00,0x11,0x00,0x12,0x00,
@@ -128,26 +128,20 @@ struct nec_cirrus_config_t nec_cirrus_config[] = {
 	}
 };
 
-void	nec_cirrus_chip_init(int);
+struct nec_cirrus_config_t *nec_cirrus_chip_init(int);
 void	nec_cirrus_dump(u_int32_t);
 void	nec_cirrus_enter(void);
 void	nec_cirrus_leave(void);
 void	nec_cirrus_set_base(u_int8_t);
 void	nec_cirrus_set_default_cmap(void);
 
-void	draw_box(int, int, int, int, int, int);
+void	draw_box(struct nec_cirrus_config_t *, int, int, int, int, int);
 
 int
 nec_cirrus_main(int mode)
 {
 	int i, j, boxw, boxh, linewidth;
-
-	if ((mode < 0) ||
-	    (mode >= sizeof(nec_cirrus_config)
-		/ sizeof(nec_cirrus_config[0]))) {
-			printf("mode %d is not valid\n", mode);
-			return 1;
-	}
+	struct nec_cirrus_config_t *ncc;
 
 	/* set VRAM window address to 0xf00000-0xf0ffff */
 	necwab_outb(NECWAB_INDEX, 0x01);
@@ -159,22 +153,32 @@ nec_cirrus_main(int mode)
 
 	printf("Chip ID = 0x%02x\n", nec_cirrus_chip_id());
 
-	nec_cirrus_chip_init(mode);
+	ncc = nec_cirrus_chip_init(mode);
 
 	/* clear all 1MB VRAM */
 	for (i = 0; i < 0xfffff; i++) {
 		nec_cirrus_write(i, 0);
 	}
 
-	/* write 256 color matrix */
-	linewidth = nec_cirrus_config[mode].width;
-	boxw = nec_cirrus_config[mode].width  / 16;
-	boxh = nec_cirrus_config[mode].height / 16;
-	for (j = 0; j < 16; j++)
-		for (i = 0; i < 16; i++)
-			draw_box(i * boxw, j * boxh,
-				 (i + 1) * boxw - 2, (j + 1) * boxh - 2,
-				j * 16 + i, linewidth);
+	if (ncc->depth == 16) {
+		/* 16bit depth: write 256x256 matrix */
+		boxw = ncc->width  / 256;
+		boxh = ncc->height / 256;
+		for (j = 0; j < 256; j++)
+			for (i = 0; i < 256; i++)
+				draw_box(ncc, i * boxw, j * boxh,
+				    (i + 1) * boxw - 1, (j + 1) * boxh - 1,
+				    j * 256 + i);
+	} else {
+		/* write 256 color matrix */
+		boxw = ncc->width  / 16;
+		boxh = ncc->height / 16;
+		for (j = 0; j < 16; j++)
+			for (i = 0; i < 16; i++)
+				draw_box(ncc, i * boxw, j * boxh,
+				    (i + 1) * boxw - 2, (j + 1) * boxh - 2,
+				    j * 16 + i);
+	}
 
 	nec_cirrus_dump(0);
 
@@ -374,14 +378,16 @@ nec_cirrus_leave(void)
 	necwab_outb(NECWAB_DATA, 0x00);
 }
 
-void
+struct nec_cirrus_config_t *
 nec_cirrus_chip_init(int mode)
 {
 	int i, index;
 	u_int8_t *c, *nec_cirrus_CRdata;
-	struct nec_cirrus_config_t *ncconfig;
+	struct nec_cirrus_config_t *ncc;
 
-	ncconfig = &nec_cirrus_config[mode];
+	ncc = &nec_cirrus_config[mode & 0x0f];
+	if (mode & 0xf0)
+		ncc->depth = 16;
 
 	nec_cirrus_unlock();
 
@@ -396,20 +402,12 @@ nec_cirrus_chip_init(int mode)
 		necwab_outb(GD542X_REG_3C5, *c++);
 	}
 
-#ifdef USE_16BIT
-	/* color mode */
-	necwab_outb(GD542X_REG_3C4, 0x0f);
-	necwab_outb(GD542X_REG_3C5, 0x95);
-	necwab_outb(GD542X_REG_3C4, 0x07);
-	necwab_outb(GD542X_REG_3C5, 0x07);
-#endif
-
-	nec_cirrus_CRdata = ncconfig->CRdata;
+	nec_cirrus_CRdata = ncc->CRdata;
 
 	necwab_outb(GD542X_REG_3C4, 0x0e);
-	necwab_outb(GD542X_REG_3C5, ncconfig->freq_num);
+	necwab_outb(GD542X_REG_3C5, ncc->freq_num);
 	necwab_outb(GD542X_REG_3C4, 0x1e);
-	necwab_outb(GD542X_REG_3C5, ncconfig->freq_denom);
+	necwab_outb(GD542X_REG_3C5, ncc->freq_denom);
 
 	/* CR */
 	/* unlock CR0-7 */
@@ -425,6 +423,33 @@ nec_cirrus_chip_init(int mode)
 	for (c = nec_cirrus_GRdata; *c != 0xff; /* empty */) {
 		necwab_outb(GD542X_REG_3CE, *c++);
 		necwab_outb(GD542X_REG_3CF, *c++);
+	}
+
+	if (ncc->depth == 16) {
+		/* SR */
+		/* clock: 16bit/pixel data at pixel rate */
+		necwab_outb(GD542X_REG_3C4, 0x07);
+		necwab_outb(GD542X_REG_3C5, 0x07);
+		/* color mode */
+		necwab_outb(GD542X_REG_3C4, 0x0f);
+		necwab_outb(GD542X_REG_3C5, 0x95);
+		necwab_outb(GD542X_REG_3C4, 0x07);
+		necwab_outb(GD542X_REG_3C5, 0x07);
+
+		/* CR */
+		necwab_outb(GD542X_REG_3D4, 0x13);
+		if ((mode  & 0x0f) == 0)	/* 640x480 */
+			necwab_outb(GD542X_REG_3D5, 0xa0);
+		else if ((mode  & 0x0f) == 1)	/* 800x600 */
+			necwab_outb(GD542X_REG_3D5, 0xc8);
+
+#if 0
+		/* GR */
+		/* not necessary? current value is 0x0c on both 8/16 bit */
+		/* GRB: Enable enhanced writes for 16-bit pixels */
+		necwab_outb(GD542X_REG_3CE, 0x0b);
+		necwab_outb(GD542X_REG_3CF, 0x1c);
+#endif
 	}
 
 	/* AR */
@@ -443,21 +468,25 @@ nec_cirrus_chip_init(int mode)
 
 	/* HDR: Hidden DAC Register */
 	necwab_inb(GD542X_REG_3DA);
+	necwab_inb(GD542X_REG_3C6);	/* four times dummy reads */
 	necwab_inb(GD542X_REG_3C6);
 	necwab_inb(GD542X_REG_3C6);
 	necwab_inb(GD542X_REG_3C6);
-	necwab_inb(GD542X_REG_3C6);
-#if defined(USE_16BIT)
-	/* 0xc1 = 16bit, 5-6-5 RGB */
-	necwab_outb(GD542X_REG_3C6, 0xc1);
-#elif defined(USE_8BIT_RGB)
-	/* 0xc9 = 8bit 3-3-2 RGB */
-	necwab_outb(GD542X_REG_3C6, 0xc9);
+	if (ncc->depth == 16) {
+		/* 0xc1 = 16bit, 5-6-5 RGB */
+		necwab_outb(GD542X_REG_3C6, 0xc1);
+	} else {
+#ifdef USE_8BIT_RGB
+		/* 0xc9 = 8bit 3-3-2 RGB */
+		necwab_outb(GD542X_REG_3C6, 0xc9);
 #else
-	/* 0x00 = 256 color map (VGA compat.) */
-	necwab_outb(GD542X_REG_3C6, 0x00);
+		/* 0x00 = 256 color map (VGA compat.) */
+		necwab_outb(GD542X_REG_3C6, 0x00);
 #endif
+	}
 	nec_cirrus_set_default_cmap();
+
+	return ncc;
 }
 
 /*
@@ -484,15 +513,23 @@ nec_cirrus_set_default_cmap(void) {
  * draw a box
  */
 void
-draw_box(int x1, int y1, int x2, int y2, int color, int linewidth)
+draw_box(struct nec_cirrus_config_t *ncc,
+	int x1, int y1, int x2, int y2, int color)
 {
 	int x, y;
 	u_int32_t addr;
 
 	for (y = y1; y <= y2; y++)
 		for (x = x1; x <= x2; x++) {
-			addr = y * linewidth + x;
-			nec_cirrus_write(addr, color);
+			if (ncc->depth == 16) {
+				addr = (y * ncc->width + x) * 2;
+				nec_cirrus_write(addr, color & 0xff);
+				nec_cirrus_write(addr + 1,
+				    (color & 0xff00) >> 8);
+			} else {
+				addr = y * ncc->width + x;
+				nec_cirrus_write(addr, color);
+			}
 		}
 	return;
 }
