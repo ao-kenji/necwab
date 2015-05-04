@@ -15,9 +15,13 @@ Current status
 --------------
 ### PC-9801-96
 
-1024x768(8bpp), 800x600(8bpp), and 640x480(8bpp) modes are working with this program.  This board seems not support Linear Addressing, so we have to use "paging" addressing (base and offset) scheme on 1MB VRAM:-(  16bpp mode is not checked yet.
+1024x768(8bpp), 800x600(8bpp and 16bpp), and 640x480(8bpp and 16bpp) modes are working with this program.
 
-![1024x768 on LUNA-88K2](https://pbs.twimg.com/media/CDubVUwVIAAb02C.jpg)
+Note: Although the GD-5428 itself has linear addressing feature, this board seems not support linear addressing.  So here I have to use "paging" addressing (base and offset) scheme on 1MB VRAM:-(
+
+![256 color pattern on 1024x768 resolution](https://pbs.twimg.com/media/CDubVUwVIAAb02C.jpg)
+
+![yaft runs on 800x600 resolution](https://pbs.twimg.com/media/CEDvIo0VAAE-BF0.jpg)
 
 ### PC-9801-85
 
