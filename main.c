@@ -82,7 +82,7 @@ main(int argc, char **argv)
 	switch (type) {
 	case 0x20:
 	case 0x21:
-		nec_s3_main();
+		nec_s3_main(2);
 		break;
 	case 0x60:
 		nec_cirrus_main(mode);

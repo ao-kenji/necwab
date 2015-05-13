@@ -27,7 +27,8 @@
 
 #include "nec_cirrus.h"
 #include "necwab.h"
-#include "color.h"
+
+extern u_int32_t color_list[256];
 
 static u_int8_t nec_cirrus_SRdata[] = {
 	0x00,0x02,0x00,0x03,0x01,0x01,0x02,0xFF,
@@ -92,6 +93,7 @@ static u_int8_t nec_cirrus_ARdata[] = {
 	0x10,0x41,0x11,0x00,0x12,0x0F,0x13,0x00,
 	0x14,0x00,0xFF
 };
+
 struct nec_cirrus_config_t {
 	int width;
 	int height;

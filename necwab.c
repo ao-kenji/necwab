@@ -28,6 +28,7 @@
 #include "nec_cirrus.h"
 #include "nec_s3.h"
 #include "necwab.h"
+#include "color.h"
 
 int wab_iofd, wab_memfd;
 u_int8_t *pc98iobase, *pc98membase;
@@ -105,13 +106,9 @@ necwab_outb(u_int16_t index, u_int8_t data)
 int
 necwab_outw(u_int16_t index, u_int16_t data)
 {
-#if 0
-	necwab_outb(index + 0, (u_int8_t)(data >> 8));
-	necwab_outb(index + 1, (u_int8_t)(data & 0xff));
-#else
+	/* luna88k is big endian */
 	necwab_outb(index + 0, (u_int8_t)(data & 0xff));
 	necwab_outb(index + 1, (u_int8_t)(data >> 8));
-#endif
 }
 
 int
