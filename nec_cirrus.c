@@ -20,6 +20,7 @@
 
 #if 0
 #define USE_8BIT_RGB
+#define LINEAR
 #endif
 
 #include <stdio.h>
@@ -230,7 +231,11 @@ nec_cirrus_main(int type, int mode)
 
 	/* clear all 1MB VRAM */
 	for (i = 0; i < 0xfffff; i++) {
+#ifdef LINEAR
+		nec_cirrus_linear_write(i, 0);
+#else
 		nec_cirrus_write(i, 0);
+#endif
 	}
 
 	if (ncc->depth == 16) {
@@ -254,6 +259,12 @@ nec_cirrus_main(int type, int mode)
 	}
 
 	nec_cirrus_dump(0);
+#if 0
+	for (i = 1; i < 16; i++) {
+		nec_cirrus_dump(0x00100000 * i);
+		printf("\n");
+	}
+#endif
 
 	getchar();
 
@@ -383,6 +394,30 @@ nec_cirrus_read(u_int32_t addr)
 }
 
 /*
+ * write 8bit data to vram address (linear mode)
+ */
+void
+nec_cirrus_linear_write(u_int32_t addr, u_int8_t value)
+{
+	u_int8_t *waddr;
+
+	waddr = (u_int8_t *)(wab_membase + addr);
+	*waddr = value;
+}
+
+/*
+ * read 8bit data from vram address (linear mode)
+ */
+u_int8_t
+nec_cirrus_linear_read(u_int32_t addr)
+{
+	u_int8_t *raddr;
+
+	raddr = (u_int8_t *)(wab_membase + addr);
+	return *raddr;
+}
+
+/*
  * 256 bytes vram memory dump
  */
 void
@@ -393,7 +428,11 @@ nec_cirrus_dump(u_int32_t vram_addr)
 	for (i = 0; i < 256; i++) {
 		if (i % 16 == 0)
 			printf("0x%08x ", vram_addr + i);
+#ifdef LINEAR
+		printf("%02x ", nec_cirrus_linear_read(vram_addr + i));
+#else
 		printf("%02x ", nec_cirrus_read(vram_addr + i));
+#endif
 		if (i % 16 == 15)
 			printf("\n");
 	}
@@ -461,21 +500,19 @@ melco_wgna_enter(void)
 	necwab_outb(cgs->reg102, 0x01);
 	necwab_outb(cgs->reg46E8, 0x08);
 
+	/* enable video output */
 	necwab_outb(cgs->reg3C0, 0x00);	/* ARX bit 5: video disable */
-	necwab_outb(0x40e1, 0x7a);	/* display: to normal */
+	necwab_outb(0x40e1, 0x7a);	/* graphic board output off */
 	data = necwab_inb(cgs->reg3CC);
 	necwab_outb(cgs->reg3C2, data | 0x02);	/* enable display memory */
-	necwab_outb(0x40e1, 0x7b);	/* display: use WGN-A2 */
+	necwab_outb(0x40e1, 0x7b);	/* graphic board output on */
 	necwab_outb(cgs->reg3C0, 0x20);	/* ARX bit 5: video enable */
 
 	necwab_outb(cgs->reg3C4, 0x0f);
-	if (necwab_inb(0x5be1) & 0x08) {
+	if (necwab_inb(0x5be1) & 0x08)
 		necwab_outb(cgs->reg3C5, 0x7d); /* 2M bytes model */
-		printf("2MB model\n");
-	} else {
+	else
 		necwab_outb(cgs->reg3C5, 0xfd); /* 4M bytes model */
-		printf("4MB model\n");
-	}
 }
 
 void
@@ -571,6 +608,17 @@ nec_cirrus_chip_init(int mode)
 #endif
 	}
 
+#ifdef LINEAR
+	{
+		u_int8_t data;
+		/* Linear mapping at 0x00e00000 */
+		necwab_outb(cgs->reg3C4, 0x07);
+		data = necwab_inb(cgs->reg3C5);
+		necwab_outb(cgs->reg3C5, data | 0xe0);
+		wab_membase = pc98membase + 0x00e00000;
+	}
+#endif
+
 	/* AR */
 	/* clear internal flip-flop status for AR */
 	necwab_inb(cgs->reg3DA);
@@ -642,12 +690,22 @@ draw_box(struct nec_cirrus_config_t *ncc,
 		for (x = x1; x <= x2; x++) {
 			if (ncc->depth == 16) {
 				addr = (y * ncc->width + x) * 2;
+#ifdef LINEAR
+				nec_cirrus_linear_write(addr, color & 0xff);
+				nec_cirrus_linear_write(addr + 1,
+				    (color & 0xff00) >> 8);
+#else
 				nec_cirrus_write(addr, color & 0xff);
 				nec_cirrus_write(addr + 1,
 				    (color & 0xff00) >> 8);
+#endif
 			} else {
 				addr = y * ncc->width + x;
+#ifdef LINEAR
+				nec_cirrus_linear_write(addr, color);
+#else
 				nec_cirrus_write(addr, color);
+#endif
 			}
 		}
 	return;
