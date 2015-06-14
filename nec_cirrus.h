@@ -18,7 +18,7 @@
  * prototypes
  */
 
-int	nec_cirrus_main(int);
+int	nec_cirrus_main(int, int);
 void	nec_cirrus_reg_on(void);
 void	nec_cirrus_reg_off(void);
 void	nec_cirrus_disp_on(void);

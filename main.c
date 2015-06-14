@@ -84,8 +84,9 @@ main(int argc, char **argv)
 	case 0x21:
 		nec_s3_main(2);
 		break;
-	case 0x60:
-		nec_cirrus_main(mode);
+	case 0x60:	/* NEC WAB-B3 */
+	case 0xc2:	/* MELCO WGN/WSN-A */
+		nec_cirrus_main(type, mode);
 		break;
 	default:
 		break;

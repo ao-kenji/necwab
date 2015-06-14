@@ -116,6 +116,13 @@ necwab_ident_board(void)
 {
 	u_int8_t data;
 
+	/* first, try to check 3rd-party-board */
+	data = necwab_inb(0x51e1);
+	if (data == 0xc2) {
+		printf("MELCO WGN/WSN-A found\n");
+		return (int)data;
+	}
+
 	necwab_outb(NECWAB_INDEX, 0x00);
 	data = necwab_inb(NECWAB_DATA);
 

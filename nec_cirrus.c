@@ -31,8 +31,20 @@
 
 extern u_int32_t color_list[256];
 
-/* register address definition for PC-9801-96 */
+/* prototype */
+struct nec_cirrus_config_t *nec_cirrus_chip_init(int);
+void	nec_cirrus_dump(u_int32_t);
+void	nec_cirrus_enter(void);
+void	nec_cirrus_leave(void);
+void	nec_cirrus_set_base(u_int8_t);
+void	nec_cirrus_set_default_cmap(void);
 
+void	melco_wgna_enter(void);
+void	melco_wgna_leave(void);
+
+void	draw_box(struct nec_cirrus_config_t *, int, int, int, int, int);
+
+/* register address definition for PC-9801-96 */
 struct cbus_gd54xx_sc nec_cirrus_sc = {
 	.reg3C0 = 0x0C50,
 	.reg3C1 = 0x0C51,
@@ -53,7 +65,39 @@ struct cbus_gd54xx_sc nec_cirrus_sc = {
 	.reg3DA	= 0x0D5A,
 	.reg102 = 0x0902,
 	.reg094 = 0x0904,
+
+	.enter = nec_cirrus_enter,
+	.leave = nec_cirrus_leave,
 };
+
+/* register address definition for MELCO W[GS]N-A */
+struct cbus_gd54xx_sc melco_wgna_sc = {
+	.reg3C0 = 0x40e0,
+	.reg3C1 = 0x41e0,
+	.reg3C2 = 0x42e0,
+	.reg3C3	= 0x43e0,
+	.reg3C4 = 0x44e0,
+	.reg3C5	= 0x45e0,
+	.reg3C6 = 0x46e0,
+	.reg3C7 = 0x47e0,
+	.reg3C8 = 0x48e0,
+	.reg3C9 = 0x49e0,
+	.reg3CA = 0x4ae0,
+	.reg3CC = 0x4ce0,
+	.reg3CE = 0x4ee0,
+	.reg3CF = 0x4fe0,
+	.reg3D4 = 0x54e0,
+	.reg3D5 = 0x55e0,
+	.reg3DA	= 0x5ae0,
+	.reg102 = 0x42e0,
+	.reg40E1 = 0x40e1,
+	.reg46E8 = 0x46e8,
+
+	.enter = melco_wgna_enter,
+	.leave = melco_wgna_leave,
+};
+
+struct cbus_gd54xx_sc *cgs;
 
 static u_int8_t nec_cirrus_SRdata[] = {
 	0x00,0x02,0x00,0x03,0x01,0x01,0x02,0xFF,
@@ -155,30 +199,30 @@ struct nec_cirrus_config_t nec_cirrus_config[] = {
 	}
 };
 
-struct cbus_gd54xx_sc *cgs = &nec_cirrus_sc;
-
-struct nec_cirrus_config_t *nec_cirrus_chip_init(int);
-void	nec_cirrus_dump(u_int32_t);
-void	nec_cirrus_enter(void);
-void	nec_cirrus_leave(void);
-void	nec_cirrus_set_base(u_int8_t);
-void	nec_cirrus_set_default_cmap(void);
-
-void	draw_box(struct nec_cirrus_config_t *, int, int, int, int, int);
-
 int
-nec_cirrus_main(int mode)
+nec_cirrus_main(int type, int mode)
 {
 	int i, j, boxw, boxh, linewidth;
 	struct nec_cirrus_config_t *ncc;
 
-	/* set VRAM window address to 0xf00000-0xf0ffff */
-	necwab_outb(NECWAB_INDEX, 0x01);
-	necwab_outb(NECWAB_DATA, 0xa0);
+	switch (type) {
+	case 0x60:	/* PC-9801-96 */
+		cgs = &nec_cirrus_sc;
+		/* set VRAM window address to 0xf00000-0xf0ffff */
+		necwab_outb(NECWAB_INDEX, 0x01);
+		necwab_outb(NECWAB_DATA, 0xa0);
+		break;
+	case 0xc2:	/* MELCO WGN/WSN-A */
+		cgs = &melco_wgna_sc;
+		break;
+	default:
+		return -1;
+	}
+
 	wab_membase = pc98membase + 0x00f00000;
 
 	/* enable WAB chip register */
-	nec_cirrus_enter();
+	cgs->enter();
 
 	printf("Chip ID = 0x%02x\n", nec_cirrus_chip_id());
 
@@ -213,7 +257,7 @@ nec_cirrus_main(int mode)
 
 	getchar();
 
-	nec_cirrus_leave();
+	cgs->leave();
 
 	return 0;
 }
@@ -405,6 +449,52 @@ nec_cirrus_leave(void)
 	/* disable WAB registers & video output */
 	necwab_outb(NECWAB_INDEX, 0x03);
 	necwab_outb(NECWAB_DATA, 0x00);
+}
+
+void
+melco_wgna_enter(void)
+{
+	u_int8_t data;
+
+	/* activate */
+	necwab_outb(cgs->reg46E8, 0x18);
+	necwab_outb(cgs->reg102, 0x01);
+	necwab_outb(cgs->reg46E8, 0x08);
+
+	necwab_outb(cgs->reg3C0, 0x00);	/* ARX bit 5: video disable */
+	necwab_outb(0x40e1, 0x7a);	/* display: to normal */
+	data = necwab_inb(cgs->reg3CC);
+	necwab_outb(cgs->reg3C2, data | 0x02);	/* enable display memory */
+	necwab_outb(0x40e1, 0x7b);	/* display: use WGN-A2 */
+	necwab_outb(cgs->reg3C0, 0x20);	/* ARX bit 5: video enable */
+
+	necwab_outb(cgs->reg3C4, 0x0f);
+	if (necwab_inb(0x5be1) & 0x08) {
+		necwab_outb(cgs->reg3C5, 0x7d); /* 2M bytes model */
+		printf("2MB model\n");
+	} else {
+		necwab_outb(cgs->reg3C5, 0xfd); /* 4M bytes model */
+		printf("4MB model\n");
+	}
+}
+
+void
+melco_wgna_leave(void)
+{
+	u_int8_t data;
+
+	necwab_outb(cgs->reg3C0, 0x1f);
+	necwab_inb(cgs->reg3C6);	/* dummy read 4 times to access */
+	necwab_inb(cgs->reg3C6);
+	necwab_inb(cgs->reg3C6);
+	necwab_inb(cgs->reg3C6);
+	necwab_outb(cgs->reg3C6, 0x80);
+
+	/* disable video output */
+	data = necwab_inb(cgs->reg3CC);
+	necwab_outb(cgs->reg3C2, data & 0xfd);	/* disable display memory */
+	necwab_outb(0x40e1, 0x7a);	/* display: to normal */
+	necwab_outb(cgs->reg3C0, 0x00);	/* ARX bit 5: video disable */
 }
 
 struct nec_cirrus_config_t *

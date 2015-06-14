@@ -38,4 +38,9 @@ struct cbus_gd54xx_sc {
 	u_int16_t	reg3DA;	/* W:Feat. Control / Input Status Register 1 */
 	u_int16_t	reg102;
 	u_int16_t	reg094;
+	u_int16_t	reg40E1;
+	u_int16_t	reg46E8;
+
+	void		(*enter)(void);	/* board dependent function */
+	void		(*leave)(void);	/* board dependent function */
 };
