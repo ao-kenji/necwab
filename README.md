@@ -28,7 +28,7 @@ Note: Although the GD-5428 itself has linear addressing feature, this board seem
 
 Not working yet, just tweaking...
 
-### PC-9801-96
+### MELCO WGN-A2
 
 Status is almost same as PC-9801-96, but it is noisy on 16bpp modes.  It might need more board specific initialization...
 
