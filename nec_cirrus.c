@@ -25,10 +25,35 @@
 #include <stdio.h>
 #include <sys/types.h>
 
+#include "gd54xx.h"
 #include "nec_cirrus.h"
 #include "necwab.h"
 
 extern u_int32_t color_list[256];
+
+/* register address definition for PC-9801-96 */
+
+struct cbus_gd54xx_sc nec_cirrus_sc = {
+	.reg3C0 = 0x0C50,
+	.reg3C1 = 0x0C51,
+	.reg3C2 = 0x0C52,
+	.reg3C3	= 0x0C53,
+	.reg3C4 = 0x0C54,
+	.reg3C5	= 0x0c55,
+	.reg3C6 = 0x0C56,
+	.reg3C7 = 0x0C57,
+	.reg3C8 = 0x0C58,
+	.reg3C9 = 0x0C59,
+	.reg3CA = 0x0C5A,
+	.reg3CC = 0x0C5C,
+	.reg3CE = 0x0C5E,
+	.reg3CF = 0x0C5F,
+	.reg3D4 = 0x0D54,
+	.reg3D5 = 0x0D55,
+	.reg3DA	= 0x0D5A,
+	.reg102 = 0x0902,
+	.reg094 = 0x0904,
+};
 
 static u_int8_t nec_cirrus_SRdata[] = {
 	0x00,0x02,0x00,0x03,0x01,0x01,0x02,0xFF,
@@ -130,6 +155,8 @@ struct nec_cirrus_config_t nec_cirrus_config[] = {
 	}
 };
 
+struct cbus_gd54xx_sc *cgs = &nec_cirrus_sc;
+
 struct nec_cirrus_config_t *nec_cirrus_chip_init(int);
 void	nec_cirrus_dump(u_int32_t);
 void	nec_cirrus_enter(void);
@@ -196,8 +223,8 @@ nec_cirrus_chip_id(void)
 {
 	u_int8_t data;
 
-	necwab_outb(GD542X_REG_3D4, 0x27);
-	data = necwab_inb(GD542X_REG_3D5);
+	necwab_outb(cgs->reg3D4, 0x27);
+	data = necwab_inb(cgs->reg3D5);
 	data >>= 2;	/* bit 7-2 has Chip ID */
 	return data;
 }
@@ -262,8 +289,8 @@ nec_cirrus_set_base(u_int8_t base) {
 	static u_int8_t base0 = 0xff;	/* cache */
 
 	if (base0 != base) {
-		necwab_outb(GD542X_REG_3CE, 0x09);
-		necwab_outb(GD542X_REG_3CF, base);
+		necwab_outb(cgs->reg3CE, 0x09);
+		necwab_outb(cgs->reg3CF, base);
 		base0 = base;
 	}
 }
@@ -335,8 +362,8 @@ void
 nec_cirrus_unlock(void)
 {
 	/* 0x12 -> SR6 */ 
-	necwab_outb(GD542X_REG_3C4, 0x06);
-	necwab_outb(GD542X_REG_3C5, 0x12);
+	necwab_outb(cgs->reg3C4, 0x06);
+	necwab_outb(cgs->reg3C5, 0x12);
 }
 
 /*
@@ -346,8 +373,8 @@ void
 nec_cirrus_lock(void)
 {
 	/* 0x00 -> SR6 */ 
-	necwab_outb(GD542X_REG_3C4, 0x06);
-	necwab_outb(GD542X_REG_3C5, 0x00);
+	necwab_outb(cgs->reg3C4, 0x06);
+	necwab_outb(cgs->reg3C5, 0x00);
 }
 
 void
@@ -357,23 +384,23 @@ nec_cirrus_enter(void)
 	necwab_outb(NECWAB_INDEX, 0x03);
 	necwab_outb(NECWAB_DATA, 0x03);
 
-	necwab_outb(GD542X_REG_094, 0x01);
-	necwab_outb(GD542X_REG_102, 0x01);
-	necwab_outb(GD542X_REG_3C2, 0x01);
-	necwab_outb(GD542X_REG_094, 0x20);
-	necwab_outb(GD542X_REG_3C2, 0xe1);
-	necwab_outb(GD542X_REG_3DA, 0x00);
+	necwab_outb(cgs->reg094, 0x01);
+	necwab_outb(cgs->reg102, 0x01);
+	necwab_outb(cgs->reg3C2, 0x01);
+	necwab_outb(cgs->reg094, 0x20);
+	necwab_outb(cgs->reg3C2, 0xe1);
+	necwab_outb(cgs->reg3DA, 0x00);
 }
 
 void
 nec_cirrus_leave(void)
 {
-	necwab_outb(GD542X_REG_3C0, 0x1f);
-	necwab_inb(GD542X_REG_3C6);	/* dummy read 4 times to access */
-	necwab_inb(GD542X_REG_3C6);
-	necwab_inb(GD542X_REG_3C6);
-	necwab_inb(GD542X_REG_3C6);
-	necwab_outb(GD542X_REG_3C6, 0x80);
+	necwab_outb(cgs->reg3C0, 0x1f);
+	necwab_inb(cgs->reg3C6);	/* dummy read 4 times to access */
+	necwab_inb(cgs->reg3C6);
+	necwab_inb(cgs->reg3C6);
+	necwab_inb(cgs->reg3C6);
+	necwab_outb(cgs->reg3C6, 0x80);
 
 	/* disable WAB registers & video output */
 	necwab_outb(NECWAB_INDEX, 0x03);
@@ -394,96 +421,96 @@ nec_cirrus_chip_init(int mode)
 	nec_cirrus_unlock();
 
 	/* MISC */
-	necwab_outb(GD542X_REG_3C2, 0xef);
+	necwab_outb(cgs->reg3C2, 0xef);
 	/* enable VGA subsystem */
-	necwab_outb(GD542X_REG_3C3, 0x01);
+	necwab_outb(cgs->reg3C3, 0x01);
 
 	/* SR: Sequence Control Register */
 	for (c = nec_cirrus_SRdata; *c != 0xff; /* empty */) {
-		necwab_outb(GD542X_REG_3C4, *c++);
-		necwab_outb(GD542X_REG_3C5, *c++);
+		necwab_outb(cgs->reg3C4, *c++);
+		necwab_outb(cgs->reg3C5, *c++);
 	}
 
 	nec_cirrus_CRdata = ncc->CRdata;
 
-	necwab_outb(GD542X_REG_3C4, 0x0e);
-	necwab_outb(GD542X_REG_3C5, ncc->freq_num);
-	necwab_outb(GD542X_REG_3C4, 0x1e);
-	necwab_outb(GD542X_REG_3C5, ncc->freq_denom);
+	necwab_outb(cgs->reg3C4, 0x0e);
+	necwab_outb(cgs->reg3C5, ncc->freq_num);
+	necwab_outb(cgs->reg3C4, 0x1e);
+	necwab_outb(cgs->reg3C5, ncc->freq_denom);
 
 	/* CR */
 	/* unlock CR0-7 */
-	necwab_outb(GD542X_REG_3D4, 0x11);
-	necwab_outb(GD542X_REG_3D5, 0x00);
+	necwab_outb(cgs->reg3D4, 0x11);
+	necwab_outb(cgs->reg3D5, 0x00);
 
 	for (c = nec_cirrus_CRdata; *c != 0xff; /* empty */) {
-		necwab_outb(GD542X_REG_3D4, *c++);
-		necwab_outb(GD542X_REG_3D5, *c++);
+		necwab_outb(cgs->reg3D4, *c++);
+		necwab_outb(cgs->reg3D5, *c++);
 	}
 
 	/* GR */
 	for (c = nec_cirrus_GRdata; *c != 0xff; /* empty */) {
-		necwab_outb(GD542X_REG_3CE, *c++);
-		necwab_outb(GD542X_REG_3CF, *c++);
+		necwab_outb(cgs->reg3CE, *c++);
+		necwab_outb(cgs->reg3CF, *c++);
 	}
 
 	if (ncc->depth == 16) {
 		/* SR */
 		/* clock: 16bit/pixel data at pixel rate */
-		necwab_outb(GD542X_REG_3C4, 0x07);
-		necwab_outb(GD542X_REG_3C5, 0x07);
+		necwab_outb(cgs->reg3C4, 0x07);
+		necwab_outb(cgs->reg3C5, 0x07);
 		/* color mode */
-		necwab_outb(GD542X_REG_3C4, 0x0f);
-		necwab_outb(GD542X_REG_3C5, 0x95);
-		necwab_outb(GD542X_REG_3C4, 0x07);
-		necwab_outb(GD542X_REG_3C5, 0x07);
+		necwab_outb(cgs->reg3C4, 0x0f);
+		necwab_outb(cgs->reg3C5, 0x95);
+		necwab_outb(cgs->reg3C4, 0x07);
+		necwab_outb(cgs->reg3C5, 0x07);
 
 		/* CR */
-		necwab_outb(GD542X_REG_3D4, 0x13);
+		necwab_outb(cgs->reg3D4, 0x13);
 		if ((mode  & 0x0f) == 0)	/* 640x480 */
-			necwab_outb(GD542X_REG_3D5, 0xa0);
+			necwab_outb(cgs->reg3D5, 0xa0);
 		else if ((mode  & 0x0f) == 1)	/* 800x600 */
-			necwab_outb(GD542X_REG_3D5, 0xc8);
+			necwab_outb(cgs->reg3D5, 0xc8);
 
 #if 0
 		/* GR */
 		/* not necessary? current value is 0x0c on both 8/16 bit */
 		/* GRB: Enable enhanced writes for 16-bit pixels */
-		necwab_outb(GD542X_REG_3CE, 0x0b);
-		necwab_outb(GD542X_REG_3CF, 0x1c);
+		necwab_outb(cgs->reg3CE, 0x0b);
+		necwab_outb(cgs->reg3CF, 0x1c);
 #endif
 	}
 
 	/* AR */
 	/* clear internal flip-flop status for AR */
-	necwab_inb(GD542X_REG_3DA);
+	necwab_inb(cgs->reg3DA);
 	for (c = nec_cirrus_ARdata; *c != 0xff; /* empty */) {
-		necwab_outb(GD542X_REG_3C0, *c++);
-		necwab_outb(GD542X_REG_3C0, *c++);
+		necwab_outb(cgs->reg3C0, *c++);
+		necwab_outb(cgs->reg3C0, *c++);
 	}
-	necwab_inb(GD542X_REG_3DA);
+	necwab_inb(cgs->reg3DA);
 	/* ARX <- 0x20: Video Enable */
-	necwab_outb(GD542X_REG_3C0, 0x20);
+	necwab_outb(cgs->reg3C0, 0x20);
 
 	/* pixel mask register <- 0xff: color mode through */
-	necwab_outb(GD542X_REG_3C6, 0xff);
+	necwab_outb(cgs->reg3C6, 0xff);
 
 	/* HDR: Hidden DAC Register */
-	necwab_inb(GD542X_REG_3DA);
-	necwab_inb(GD542X_REG_3C6);	/* four times dummy reads */
-	necwab_inb(GD542X_REG_3C6);
-	necwab_inb(GD542X_REG_3C6);
-	necwab_inb(GD542X_REG_3C6);
+	necwab_inb(cgs->reg3DA);
+	necwab_inb(cgs->reg3C6);	/* four times dummy reads */
+	necwab_inb(cgs->reg3C6);
+	necwab_inb(cgs->reg3C6);
+	necwab_inb(cgs->reg3C6);
 	if (ncc->depth == 16) {
 		/* 0xc1 = 16bit, 5-6-5 RGB */
-		necwab_outb(GD542X_REG_3C6, 0xc1);
+		necwab_outb(cgs->reg3C6, 0xc1);
 	} else {
 #ifdef USE_8BIT_RGB
 		/* 0xc9 = 8bit 3-3-2 RGB */
-		necwab_outb(GD542X_REG_3C6, 0xc9);
+		necwab_outb(cgs->reg3C6, 0xc9);
 #else
 		/* 0x00 = 256 color map (VGA compat.) */
-		necwab_outb(GD542X_REG_3C6, 0x00);
+		necwab_outb(cgs->reg3C6, 0x00);
 #endif
 	}
 	nec_cirrus_set_default_cmap();
@@ -499,15 +526,15 @@ nec_cirrus_set_default_cmap(void) {
 	int i;
 	u_int8_t red, green, blue;
 
-	necwab_outb(GD542X_REG_3C8, 0);	/* reset */
+	necwab_outb(cgs->reg3C8, 0);	/* reset */
 	for(i = 0; i < sizeof(color_list) / sizeof(color_list[0]); i++) {
 		red   = (color_list[i] & 0xff0000) >> 16;
 		green = (color_list[i] & 0x00ff00) >>  8;
 		blue  = (color_list[i] & 0x0000ff);
 		/* data (R,G,B) */
-		necwab_outb(GD542X_REG_3C9, red   >> 2);
-		necwab_outb(GD542X_REG_3C9, green >> 2);
-		necwab_outb(GD542X_REG_3C9, blue  >> 2);
+		necwab_outb(cgs->reg3C9, red   >> 2);
+		necwab_outb(cgs->reg3C9, green >> 2);
+		necwab_outb(cgs->reg3C9, blue  >> 2);
 	}
 }
 
