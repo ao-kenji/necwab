@@ -3,13 +3,14 @@ necwab
 
 necwab - NEC Window Accelerator Board(WAB) test on OpenBSD/luna88k
 
-This is my experimental program to use NEC WABs (for PC-9801 series)
-on [OpenBSD/luna88k](http://www.openbsd.org/luna88k.html).
+This is my experimental program to use NEC and other 3rd-party-made WABs
+(for PC-9801 series) on [OpenBSD/luna88k](http://www.openbsd.org/luna88k.html).
 
 Target WABs
 -----------
 - PC-9801-96 "Windows Accelerator Board B3", Cirrus Logic GD-5428, 1MB VRAM
 - PC-9801-85 "Windows Accelerator Board B", S3 928, 1MB VRAM
+- MELCO WGN-A2, Cirrus Logic GD-5434, 2MB VRAM
 
 Current status
 --------------
