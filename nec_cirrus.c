@@ -583,12 +583,12 @@ nec_cirrus_chip_init(int mode)
 
 	if (ncc->depth == 16) {
 		/* SR */
-		/* clock: 16bit/pixel data at pixel rate */
-		necwab_outb(cgs->reg3C4, 0x07);
-		necwab_outb(cgs->reg3C5, 0x07);
+#if 0
 		/* color mode */
 		necwab_outb(cgs->reg3C4, 0x0f);
 		necwab_outb(cgs->reg3C5, 0x95);
+#endif
+		/* clock: 16bit/pixel data at pixel rate */
 		necwab_outb(cgs->reg3C4, 0x07);
 		necwab_outb(cgs->reg3C5, 0x07);
 
