@@ -30,7 +30,9 @@ Not working yet, just tweaking...
 
 ### MELCO WGN-A2
 
-Status is almost same as PC-9801-96.  1280x1024 mode does not work yet.
+Status is the same as PC-9801-96. 1280x1024 mode does not work yet.
+
+![WGN-A2, 1024x768 resolution](https://pbs.twimg.com/media/CHsyfGXUAAA6ez5.jpg)
 
 References
 ----------
