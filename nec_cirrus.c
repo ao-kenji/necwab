@@ -285,58 +285,6 @@ nec_cirrus_chip_id(void)
 }
 
 /*
- * enable GD5428 registers on WAB
- */
-void
-nec_cirrus_reg_on(void)
-{
-	u_int8_t data;
-	necwab_outb(NECWAB_INDEX, 0x03);
-	data = necwab_inb(NECWAB_DATA);
-	data |= 0x01;
-	necwab_outb(NECWAB_DATA, data);
-}
-
-/*
- * disable GD5428 registers on WAB
- */
-void
-nec_cirrus_reg_off(void)
-{
-	u_int8_t data;
-	necwab_outb(NECWAB_INDEX, 0x03);
-	data = necwab_inb(NECWAB_DATA);
-	data &= ~0x01;
-	necwab_outb(NECWAB_DATA, data);
-}
-
-/*
- * turn on display relay on WAB
- */
-void
-nec_cirrus_disp_on(void)
-{
-	u_int8_t data;
-	necwab_outb(NECWAB_INDEX, 0x03);
-	data = necwab_inb(NECWAB_DATA);
-	data |= 0x02;
-	necwab_outb(NECWAB_DATA, data);
-}
-
-/*
- * turn off display relay on WAB
- */
-void
-nec_cirrus_disp_off(void)
-{
-	u_int8_t data;
-	necwab_outb(NECWAB_INDEX, 0x03);
-	data = necwab_inb(NECWAB_DATA);
-	data &= ~0x02;
-	necwab_outb(NECWAB_DATA, data);
-}
-
-/*
  * set base register (with simple cache)
  */
 void
