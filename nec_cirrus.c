@@ -611,6 +611,11 @@ nec_cirrus_chip_init(int mode)
 #ifdef LINEAR
 	{
 		u_int8_t data;
+		/* see GD543X TRM Appendix D2-4 */
+		necwab_outb(cgs->reg3CE, 0x0b);
+		data = necwab_inb(cgs->reg3CF);
+		necwab_outb(cgs->reg3CF, data | 0x20);
+
 		/* Linear mapping at 0x00e00000 */
 		necwab_outb(cgs->reg3C4, 0x07);
 		data = necwab_inb(cgs->reg3C5);
