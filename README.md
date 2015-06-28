@@ -30,13 +30,14 @@ Not working yet, just tweaking...
 
 ### MELCO WGN-A2
 
-Status is the same as PC-9801-96. 1280x1024 mode does not work yet.
+Now 1280x1024(8bpp) mode is working.  Other modes those of PC-9801-96 also works.  1024x768(16bpp) is not tested yet.
 
-![WGN-A2, 1024x768 resolution](https://pbs.twimg.com/media/CHsyfGXUAAA6ez5.jpg)
+![WGN-A2, 1280x1024 resolution](https://pbs.twimg.com/media/CIjZBZhUcAAUo8S.jpg)
 
 References
 ----------
 - "True Color VGA Family CL-GD542X Technical Reference Manual", Cirrus Logic.
+- "Alpine(tm) VGA Family CL-GD543X/'4X Technical Reference Manual", Cirrus Logic.
 - GD5428/5430/5440を使う [http://darudarudan.syuriken.jp/kai/pc9821.htm#GD54xx](http://darudarudan.syuriken.jp/kai/pc9821.htm#GD54xx)
 - VGAグラフィックドライバー VGAについて [http://softwaretechnique.jp/OS_Development/Driver/GF/VGA/vga01.html](http://softwaretechnique.jp/OS_Development/Driver/GF/VGA/vga01.html)
 - PC-9821シリーズのCL-GD5428,5430,5440を使う方法 [http://www.webtech.co.jp/amiware/lzh/nec_clgd.txt](http://www.webtech.co.jp/amiware/lzh/nec_clgd.txt)
