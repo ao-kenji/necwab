@@ -24,6 +24,7 @@
 #endif
 
 #include <stdio.h>
+#include <string.h>
 #include <sys/types.h>
 
 #include "gd54xx.h"
@@ -274,13 +275,17 @@ nec_cirrus_main(int type, int mode)
 	ncc = nec_cirrus_chip_init(mode);
 
 	/* clear all 4MB VRAM */
-	for (i = 0; i < 0x400000; i++) {
 #ifdef LINEAR
+	for (i = 0; i < 0x400000; i++) {
 		nec_cirrus_linear_write(i, 0);
-#else
-		nec_cirrus_write(i, 0);
-#endif
 	}
+#else
+	for (i = 0; i < 64; i++) {		/* 4MB = 64KB x 64 */
+		printf("%d,", i);
+		nec_cirrus_set_base(i << 2);
+		memset(wab_membase, 0, 0x10000);	/* fill 64KB window */
+	}
+#endif
 
 	if (ncc->depth == 16) {
 		/* 16bit depth: write 256x256 matrix */
