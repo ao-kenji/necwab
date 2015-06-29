@@ -71,7 +71,7 @@ main(int argc, char **argv)
 	case 0x3:	/* 1280x1024, 8bpp */
 	case 0x10:	/* 640x480, 16bpp(5-6-5) */
 	case 0x11:	/* 800x600, 16bpp(5-6-5) */
-	/* case 0x12:	   1024x768, 16bpp(5-6-5) */
+	case 0x12:	/* 1024x768, 16bpp(5-6-5) */
 		break;
 	default:
 		usage();
@@ -85,8 +85,8 @@ main(int argc, char **argv)
 		nec_s3_main(2);
 		break;
 	case 0x60:	/* NEC WAB-B3 */
-		if (mode == 3) {
-			printf("can not use mode 3 on NEC WAB-B3\n");
+		if ((mode == 0x3) || (mode == 0x12)) {
+			printf("can not use mode 0x%x on NEC WAB-B3\n", mode);
 			break;
 		}
 		/* FALLTHROUGH */

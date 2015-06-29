@@ -281,7 +281,6 @@ nec_cirrus_main(int type, int mode)
 	}
 #else
 	for (i = 0; i < 64; i++) {		/* 4MB = 64KB x 64 */
-		printf("%d,", i);
 		nec_cirrus_set_base(i << 2);
 		memset(wab_membase, 0, 0x10000);	/* fill 64KB window */
 	}
@@ -602,7 +601,13 @@ nec_cirrus_chip_init(int mode)
 			necwab_outb(cgs->reg3D5, 0xa0);
 		else if ((mode  & 0x0f) == 1)	/* 800x600 */
 			necwab_outb(cgs->reg3D5, 0xc8);
-
+		else if ((mode  & 0x0f) == 2) {	/* 1024x768 */
+			u_int8_t data;
+			necwab_outb(cgs->reg3D5, 0x00);
+			necwab_outb(cgs->reg3D4, 0x1b);
+			data = necwab_inb(cgs->reg3D5);
+			necwab_outb(cgs->reg3D5, data | 0x10);
+		}
 #if 0
 		/* GR */
 		/* not necessary? current value is 0x0c on both 8/16 bit */
