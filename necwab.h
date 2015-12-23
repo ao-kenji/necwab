@@ -27,11 +27,16 @@ extern u_int8_t *pc98membase;
 extern u_int8_t *wab_iobase;
 extern u_int8_t *wab_membase;
 
-int necwab_init(void);
+struct board_type_t {
+	int	type;
+	int	offset;
+};
+
+int necwab_init(struct board_type_t *);
 void necwab_fini(void);
 
 /* internal use */
 u_int8_t necwab_inb(u_int16_t);
 int necwab_outb(u_int16_t, u_int8_t);
 int necwab_outw(u_int16_t, u_int16_t);
-int necwab_ident_board(void);
+int necwab_ident_board(struct board_type_t *);

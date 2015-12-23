@@ -18,7 +18,7 @@
  * prototypes
  */
 
-int	nec_cirrus_main(int, int);
+int	nec_cirrus_main(struct board_type_t *, int);
 void	nec_cirrus_unlock(void);
 void	nec_cirrus_lock(void);
 void	nec_cirrus_write(u_int32_t, u_int8_t);

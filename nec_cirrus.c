@@ -28,8 +28,8 @@
 #include <sys/types.h>
 
 #include "gd54xx.h"
-#include "nec_cirrus.h"
 #include "necwab.h"
+#include "nec_cirrus.h"
 
 extern u_int32_t color_list[256];
 
@@ -43,6 +43,7 @@ void	nec_cirrus_set_default_cmap(void);
 
 void	melco_wgna_enter(void);
 void	melco_wgna_leave(void);
+void	melco_wgna_adjust(struct cbus_gd54xx_sc *, int);
 
 void	draw_box(struct nec_cirrus_config_t *, int, int, int, int, int);
 
@@ -246,12 +247,12 @@ struct nec_cirrus_config_t nec_cirrus_config[] = {
 };
 
 int
-nec_cirrus_main(int type, int mode)
+nec_cirrus_main(struct board_type_t *bt, int mode)
 {
 	int i, j, boxw, boxh, linewidth;
 	struct nec_cirrus_config_t *ncc;
 
-	switch (type) {
+	switch (bt->type) {
 	case 0x60:	/* PC-9801-96 */
 		cgs = &nec_cirrus_sc;
 		/* set VRAM window address to 0xf00000-0xf0ffff */
@@ -259,6 +260,7 @@ nec_cirrus_main(int type, int mode)
 		necwab_outb(NECWAB_DATA, 0xa0);
 		break;
 	case 0xc2:	/* MELCO WGN/WSN-A */
+		melco_wgna_adjust(&melco_wgna_sc, bt->offset);
 		cgs = &melco_wgna_sc;
 		break;
 	default:
@@ -491,6 +493,31 @@ nec_cirrus_leave(void)
 	/* disable WAB registers & video output */
 	necwab_outb(NECWAB_INDEX, 0x03);
 	necwab_outb(NECWAB_DATA, 0x00);
+}
+
+void
+melco_wgna_adjust(struct cbus_gd54xx_sc *cgs, int offset)
+{
+	cgs->reg3C0 = cgs->reg3C0 + offset;
+	cgs->reg3C1 = cgs->reg3C1 + offset;
+	cgs->reg3C2 = cgs->reg3C2 + offset;
+	cgs->reg3C3 = cgs->reg3C3 + offset;
+	cgs->reg3C4 = cgs->reg3C4 + offset;
+	cgs->reg3C5 = cgs->reg3C5 + offset;
+	cgs->reg3C6 = cgs->reg3C6 + offset;
+	cgs->reg3C7 = cgs->reg3C7 + offset;
+	cgs->reg3C8 = cgs->reg3C8 + offset;
+	cgs->reg3C9 = cgs->reg3C9 + offset;
+	cgs->reg3CA = cgs->reg3CA + offset;
+	cgs->reg3CC = cgs->reg3CC + offset;
+	cgs->reg3CE = cgs->reg3CE + offset;
+	cgs->reg3CF = cgs->reg3CF + offset;
+	cgs->reg3D4 = cgs->reg3D4 + offset;
+	cgs->reg3D5 = cgs->reg3D5 + offset;
+	cgs->reg3DA = cgs->reg3DA + offset;
+	cgs->reg102 = cgs->reg102 + offset;
+	cgs->reg40E1 = cgs->reg40E1 + offset;
+	cgs->reg46E8 = cgs->reg46E8 + offset;
 }
 
 void

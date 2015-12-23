@@ -35,7 +35,8 @@ int	debug;
 int
 main(int argc, char **argv)
 {
-	int type, mode;
+	int mode;
+	struct board_type_t bt;
 	const char *errstr;
 
 	/*
@@ -78,8 +79,8 @@ main(int argc, char **argv)
 		return 1;
 	}
 
-	type = necwab_init();
-	switch (type) {
+	necwab_init(&bt);
+	switch (bt.type) {
 	case 0x20:
 	case 0x21:
 		nec_s3_main(2);
@@ -91,7 +92,7 @@ main(int argc, char **argv)
 		}
 		/* FALLTHROUGH */
 	case 0xc2:	/* MELCO WGN/WSN-A */
-		nec_cirrus_main(type, mode);
+		nec_cirrus_main(&bt, mode);
 		break;
 	default:
 		break;

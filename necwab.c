@@ -25,9 +25,9 @@
 #include <sys/mman.h>		/* mmap(2) */
 #include <sys/types.h>
 
+#include "necwab.h"
 #include "nec_cirrus.h"
 #include "nec_s3.h"
-#include "necwab.h"
 #include "color.h"
 
 int wab_iofd, wab_memfd;
@@ -35,7 +35,7 @@ u_int8_t *pc98iobase, *pc98membase;
 u_int8_t *wab_iobase,*wab_membase;
 
 int
-necwab_init(void)
+necwab_init(struct board_type_t *bt)
 {
 	int board_type;
 
@@ -53,7 +53,7 @@ necwab_init(void)
 	}
 	wab_iobase = pc98iobase + 0x0000;
 
-	board_type = necwab_ident_board();
+	board_type = necwab_ident_board(bt);
 	if (board_type == -1) {
 		printf("No WAB found\n");
 		goto exit2;
@@ -112,15 +112,27 @@ necwab_outw(u_int16_t index, u_int16_t data)
 }
 
 int
-necwab_ident_board(void)
+necwab_ident_board(struct board_type_t *bt)
 {
 	u_int8_t data;
+	u_int i;
+
+	bt->offset = 0;
 
 	/* first, try to check 3rd-party-board */
-	data = necwab_inb(0x51e1);
-	if (data == 0xc2) {
-		printf("MELCO WGN/WSN-A found\n");
-		return (int)data;
+	for (i = 0; i < 0x0f; i += 2) {
+		data = necwab_inb(0x51e1 + i);
+		if (data == 0xc2) {
+			printf("MELCO WGN-A/WSN-A found, offset 0x%02x\n", i);
+			bt->type = data;
+			bt->offset = i;
+#if 0
+			/* XXX: special initialize? */
+			data = necwab_inb(0x51e1 + i);
+			necwab_outb(0x51e1 + i, data & 0x7f);
+#endif
+			return (int)data;
+		}
 	}
 
 	necwab_outb(NECWAB_INDEX, 0x00);
@@ -129,13 +141,16 @@ necwab_ident_board(void)
 	switch (data) {
 	case 0x20:
 		printf("PC-9801-85(WAB-B) found\n");
+		bt->type = data;
 		break;
 	case 0x60:
 		printf("PC-9801-96(WAB-B3) found\n");
+		bt->type = data;
 		break;
 	default:
 		printf("No supported WAB found, ID = 0x%02x\n", data);
 		data = -1;
+		bt->type = data;
 		break;
 	}
 
