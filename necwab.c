@@ -128,8 +128,9 @@ necwab_ident_board(struct board_type_t *bt)
 			bt->offset = i;
 #if 0
 			/* XXX: special initialize? */
-			data = necwab_inb(0x51e1 + i);
-			necwab_outb(0x51e1 + i, data & 0x7f);
+			necwab_outb(0x42e1 + i, 0x08);
+			data = necwab_inb(0x57e1 + i);
+			necwab_outb(0x57e1 + i, data & 0x7f);
 #endif
 			return (int)data;
 		}
