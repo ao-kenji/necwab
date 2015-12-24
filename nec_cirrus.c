@@ -517,7 +517,7 @@ melco_wgna_adjust(struct cbus_gd54xx_sc *cgs, int offset)
 	cgs->reg3DA = cgs->reg3DA + offset;
 	cgs->reg102 = cgs->reg102 + offset;
 	cgs->reg40E1 = cgs->reg40E1 + offset;
-	cgs->reg46E8 = cgs->reg46E8 + offset;
+	/* cgs->reg46E8 does not use with an offset!! */
 }
 
 void
