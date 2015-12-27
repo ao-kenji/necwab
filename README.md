@@ -11,6 +11,7 @@ Target WABs
 - PC-9801-96 "Windows Accelerator Board B3", Cirrus Logic GD-5428, 1MB VRAM
 - PC-9801-85 "Windows Accelerator Board B", S3 928, 1MB VRAM
 - MELCO WGN-A2, Cirrus Logic GD-5434, 2MB VRAM
+- MELCO WSN-A2F, Cirrus Logic GD-5434, 2MB VRAM (and sound functions)
 
 Current status
 --------------
@@ -33,6 +34,10 @@ Not working yet, just tweaking...
 Both 1280x1024(8bpp) and 1024x768(16bpp) modes are working as well as other modes supported on PC-9801-96.
 
 ![WGN-A2, 1280x1024 resolution](https://pbs.twimg.com/media/CIjZBZhUcAAUo8S.jpg)
+
+### MELCO WSN-A2F
+
+Not working yet, just tweaking...
 
 References
 ----------
