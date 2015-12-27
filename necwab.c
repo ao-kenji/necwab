@@ -126,13 +126,46 @@ necwab_ident_board(struct board_type_t *bt)
 			printf("MELCO WGN-A/WSN-A found, offset 0x%02x\n", i);
 			bt->type = data;
 			bt->offset = i;
-#if 0
-			/* XXX: special initialize? */
-			necwab_outb(0x42e1 + i, 0x08);
+
+			/*
+			 * from:
+			 * http://s-sasaji.ddo.jp/pcunix/wsn_pcm228r.diff
+			 */
+
+			/* WSN mode */
+			data = necwab_inb(0x56e1 + i);
+			data &= 0xae;
+			data |= 0x51;
+			necwab_outb(0x56e1 + i, data);
+
+			/* WSN SYS ENABLE */
 			data = necwab_inb(0x57e1 + i);
-			necwab_outb(0x57e1 + i, data & 0x7f);
+			data &= 0xdf;	/* 0xdf ? */
+			data |= 0x50;
+			necwab_outb(0x57e1 + i, data);
+#if 0
+			/* WSN PCM ENABLE */
+			data = necwab_inb(0x5be1 + i);
+			data &= 0xf9;
+			data |= 0x02;
+			necwab_outb(0x5be1 + i, data);
+
+			/* WSN FM INT ENABLE */
+			data = necwab_inb(0x51e0 + i);
+			data &= 0xfd;
+			necwab_outb(0x51e0 + i, data);
 #endif
-			return (int)data;
+#if 0
+			/* XXX: special init? */
+			necwab_outb(0x43e1 + i, 0x18);
+			necwab_outb(0x42e1 + i, 1);
+			necwab_outb(0x43e1 + i, 0x08);
+#endif
+
+			printf("0xa460 = 0x%02x\n",
+				necwab_inb(0xa460));
+
+			return bt->type;
 		}
 	}
 
