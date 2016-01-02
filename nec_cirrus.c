@@ -532,10 +532,10 @@ melco_wgna_enter(void)
 
 	/* enable video output */
 	necwab_outb(cgs->reg3C0, 0x00);	/* ARX bit 5: video disable */
-	necwab_outb(0x40e1, 0x7a);	/* graphic board output off */
+	necwab_outb(cgs->reg40E1, 0x7a);	/* graphic board output off */
 	data = necwab_inb(cgs->reg3CC);
 	necwab_outb(cgs->reg3C2, data | 0x02);	/* enable display memory */
-	necwab_outb(0x40e1, 0x7b);	/* graphic board output on */
+	necwab_outb(cgs->reg40E1, 0x7b);	/* graphic board output on */
 	necwab_outb(cgs->reg3C0, 0x20);	/* ARX bit 5: video enable */
 
 	necwab_outb(cgs->reg3C4, 0x0f);
@@ -560,7 +560,7 @@ melco_wgna_leave(void)
 	/* disable video output */
 	data = necwab_inb(cgs->reg3CC);
 	necwab_outb(cgs->reg3C2, data & 0xfd);	/* disable display memory */
-	necwab_outb(0x40e1, 0x7a);	/* display: to normal */
+	necwab_outb(cgs->reg40E1, 0x7a);	/* display: to normal */
 	necwab_outb(cgs->reg3C0, 0x00);	/* ARX bit 5: video disable */
 }
 

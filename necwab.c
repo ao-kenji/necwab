@@ -121,6 +121,8 @@ necwab_ident_board(struct board_type_t *bt)
 
 	/* first, try to check 3rd-party-board */
 	for (i = 0; i < 0x0f; i += 2) {
+		if (i == 8) continue;
+
 		data = necwab_inb(0x51e1 + i);
 		if (data == 0xc2) {
 			printf("MELCO WGN-A/WSN-A found, offset 0x%02x\n", i);
@@ -133,33 +135,29 @@ necwab_ident_board(struct board_type_t *bt)
 			 */
 
 			/* WSN mode */
-			data = necwab_inb(0x56e1 + i);
+			data = necwab_inb(0x56e1 + bt->offset);
 			data &= 0xae;
 			data |= 0x51;
-			necwab_outb(0x56e1 + i, data);
+			necwab_outb(0x56e1 + bt->offset, data);
+
 
 			/* WSN SYS ENABLE */
-			data = necwab_inb(0x57e1 + i);
-			data &= 0xdf;	/* 0xdf ? */
+			data = necwab_inb(0x57e1 + bt->offset);
+			data &= 0xdf;	/* XXX? */
 			data |= 0x50;
-			necwab_outb(0x57e1 + i, data);
+			necwab_outb(0x57e1 + bt->offset, data);
+
 #if 0
 			/* WSN PCM ENABLE */
-			data = necwab_inb(0x5be1 + i);
+			data = necwab_inb(0x5be1 + bt->offset);
 			data &= 0xf9;
 			data |= 0x02;
-			necwab_outb(0x5be1 + i, data);
+			necwab_outb(0x5be1 + bt->offset, data);
 
 			/* WSN FM INT ENABLE */
-			data = necwab_inb(0x51e0 + i);
+			data = necwab_inb(0x51e0 + bt->offset);
 			data &= 0xfd;
-			necwab_outb(0x51e0 + i, data);
-#endif
-#if 0
-			/* XXX: special init? */
-			necwab_outb(0x43e1 + i, 0x18);
-			necwab_outb(0x42e1 + i, 1);
-			necwab_outb(0x43e1 + i, 0x08);
+			necwab_outb(0x51e0 + bt->offset, data);
 #endif
 
 			printf("0xa460 = 0x%02x\n",
