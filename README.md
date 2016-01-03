@@ -37,7 +37,10 @@ Both 1280x1024(8bpp) and 1024x768(16bpp) modes are working as well as other mode
 
 ### MELCO WSN-A2F
 
-Not working yet, just tweaking...
+Both 1280x1024(8bpp) and 1024x768(16bpp) modes are working as well as other modes supported on PC-9801-96.
+
+![WSN-A2F, 1280x1024 resolution](https://pbs.twimg.com/media/CXrmLNLUkAIQ1cT.jpg)
+![WSN-A2F, 1024x768 resolution](https://pbs.twimg.com/media/CXrmLu4UoAAc4_R.jpg)
 
 References
 ----------
